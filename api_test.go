@@ -25,18 +25,26 @@ func TestCreateSessionSendsJSON(t *testing.T) {
 		if r.URL.Path != "/xrpc/com.atproto.server.createSession" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		body, _ := io.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("read request body: %v", err)
+		}
 		if !strings.Contains(string(body), `"identifier":"alice"`) {
 			t.Fatalf("missing identifier in payload: %s", string(body))
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"handle":"h","email":"e","accessJwt":"a","refreshJwt":"r"}`))
+		if _, err := w.Write([]byte(`{"handle":"h","email":"e","accessJwt":"a","refreshJwt":"r"}`)); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	}))
 	defer server.Close()
 
 	oldClient := httpClient
 	defer func() { httpClient = oldClient }()
-	baseURL, _ := url.Parse(server.URL)
+	baseURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("parse server URL: %v", err)
+	}
 	httpClient = &http.Client{Transport: rewriteTransport{base: baseURL, rt: http.DefaultTransport}}
 
 	s, err := createSession("alice", "pw")
@@ -53,16 +61,21 @@ func TestGetTimelineSendsAuth(t *testing.T) {
 		if got := r.Header.Get("Authorization"); got != "Bearer token" {
 			t.Fatalf("unexpected auth header: %q", got)
 		}
-		_, _ = w.Write([]byte(`{"feed":[]}`))
+		if _, err := w.Write([]byte(`{"feed":[]}`)); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	}))
 	defer server.Close()
 
 	oldClient := httpClient
 	defer func() { httpClient = oldClient }()
-	baseURL, _ := url.Parse(server.URL)
+	baseURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("parse server URL: %v", err)
+	}
 	httpClient = &http.Client{Transport: rewriteTransport{base: baseURL, rt: http.DefaultTransport}}
 
-	_, err := getTimeline(BSkySession{AccessJWT: "token"})
+	_, err = getTimeline(BSkySession{AccessJWT: "token"})
 	if err != nil {
 		t.Fatalf("getTimeline error: %v", err)
 	}

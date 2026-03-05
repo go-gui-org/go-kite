@@ -30,6 +30,7 @@ const (
 )
 
 var imageTmpDir = filepath.Join(os.TempDir(), kiteDir)
+var imageWriteLocks sync.Map
 
 func (app *App) startTimelineLoop(w *gui.Window) {
 	if app.LoopCancel != nil {
@@ -317,10 +318,25 @@ func downloadPostImages(post bSkyPost) {
 			logError(err.Error())
 			continue
 		}
-		if err := saveImage(imageTmpFile, blob); err != nil {
-			logError(err.Error())
+
+		lock := imageWriteLock(imageTmpFile)
+		lock.Lock()
+		if _, err := os.Stat(imageTmpFile); err == nil {
+			lock.Unlock()
+			continue
 		}
+		if err := saveImage(imageTmpFile, blob); err != nil {
+			lock.Unlock()
+			logError(err.Error())
+			continue
+		}
+		lock.Unlock()
 	}
+}
+
+func imageWriteLock(path string) *sync.Mutex {
+	lock, _ := imageWriteLocks.LoadOrStore(path, &sync.Mutex{})
+	return lock.(*sync.Mutex)
 }
 
 func ioReadAllClose(r io.ReadCloser) ([]byte, error) {
@@ -456,7 +472,7 @@ func getQuotePostLink(post bSkyPost) (string, string, int, int) {
 		for _, facet := range facets {
 			for _, feature := range facet.Features {
 				if feature.URI != "" {
-					return feature.URI, feature.URI, facets[0].Index.ByteStart, facets[0].Index.ByteEnd
+					return feature.URI, feature.URI, facet.Index.ByteStart, facet.Index.ByteEnd
 				}
 			}
 		}

@@ -37,6 +37,44 @@ func TestFromBlueskyPostRemovesInlineLink(t *testing.T) {
 	}
 }
 
+func TestGetQuotePostLinkUsesMatchingFacetIndexes(t *testing.T) {
+	p := minimalPost("text")
+	p.Post.Embed.Record.Value.Facets = []bSkyFacet{
+		{
+			Features: []struct {
+				Type string `json:"$type"`
+				URI  string `json:"uri"`
+			}{
+				{Type: "app.bsky.richtext.facet#link", URI: ""},
+			},
+			Index: struct {
+				ByteStart int `json:"byteStart"`
+				ByteEnd   int `json:"byteEnd"`
+			}{ByteStart: 1, ByteEnd: 2},
+		},
+		{
+			Features: []struct {
+				Type string `json:"$type"`
+				URI  string `json:"uri"`
+			}{
+				{Type: "app.bsky.richtext.facet#link", URI: "https://example.com/quote"},
+			},
+			Index: struct {
+				ByteStart int `json:"byteStart"`
+				ByteEnd   int `json:"byteEnd"`
+			}{ByteStart: 6, ByteEnd: 11},
+		},
+	}
+
+	uri, _, start, end := getQuotePostLink(p)
+	if uri != "https://example.com/quote" {
+		t.Fatalf("unexpected uri: %q", uri)
+	}
+	if start != 6 || end != 11 {
+		t.Fatalf("unexpected indexes: start=%d end=%d", start, end)
+	}
+}
+
 func minimalPost(text string) bSkyPost {
 	var p bSkyPost
 	p.Post.URI = "at://did:plc:abc/app.bsky.feed.post/123"

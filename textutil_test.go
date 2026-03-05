@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+	"unicode/utf8"
+)
 
 func TestSanitizeText(t *testing.T) {
 	in := "hello\x00 world this_is_a_very_long_token_that_should_be_truncated"
@@ -23,6 +27,18 @@ func TestIndexesInString(t *testing.T) {
 	}
 	if indexesInString(s, 1, 4) {
 		t.Fatalf("expected invalid end boundary")
+	}
+}
+
+func TestSanitizeTextPreservesUTF8(t *testing.T) {
+	in := strings.Repeat("😀", 40)
+	got := sanitizeText(in)
+	if !utf8.ValidString(got) {
+		t.Fatalf("expected valid UTF-8 output, got %q", got)
+	}
+	want := strings.Repeat("😀", 20) + "..."
+	if got != want {
+		t.Fatalf("unexpected sanitize output: got %q want %q", got, want)
 	}
 }
 

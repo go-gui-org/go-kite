@@ -19,11 +19,25 @@ const (
 func truncateLongFields(s string) string {
 	fields := strings.Fields(s)
 	for i, f := range fields {
-		if len(f) > maxFieldLen {
-			fields[i] = f[:truncateAt] + "..."
+		if utf8.RuneCountInString(f) > maxFieldLen {
+			fields[i] = truncateRunes(f, truncateAt) + "..."
 		}
 	}
 	return strings.Join(fields, " ")
+}
+
+func truncateRunes(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	i := 0
+	for idx := range s {
+		if i == max {
+			return s[:idx]
+		}
+		i++
+	}
+	return s
 }
 
 func removeControlChars(s string) string {
