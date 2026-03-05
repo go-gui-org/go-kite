@@ -379,18 +379,26 @@ func saveImage(name string, blob []byte) error {
 	if b.Dx() == 0 || b.Dy() == 0 {
 		return fmt.Errorf("invalid image dimensions")
 	}
-	ratio := float64(b.Dy()) / float64(b.Dx())
-	targetW := imageWidth
-	targetH := int(math.Round(float64(targetW) * ratio))
-	if targetH > maxImageHeight {
-		targetH = maxImageHeight
+	srcW := b.Dx()
+	srcH := b.Dy()
+	ratio := float64(srcH) / float64(srcW)
+	targetW := srcW
+	if targetW > imageWidth {
+		targetW = imageWidth
 	}
+	targetH := int(math.Round(float64(targetW) * ratio))
 	if targetH <= 0 {
 		targetH = 1
 	}
 
-	dst := image.NewRGBA(image.Rect(0, 0, targetW, targetH))
-	draw.CatmullRom.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
+	scaled := image.NewRGBA(image.Rect(0, 0, targetW, targetH))
+	draw.CatmullRom.Scale(scaled, scaled.Bounds(), src, src.Bounds(), draw.Over, nil)
+
+	var dst image.Image = scaled
+	if targetH > maxImageHeight {
+		// Keep full width and clip vertical overflow from the bottom.
+		dst = scaled.SubImage(image.Rect(0, 0, targetW, maxImageHeight))
+	}
 
 	f, err := os.Create(name)
 	if err != nil {
