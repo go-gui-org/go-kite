@@ -183,7 +183,6 @@ func timelineContent(w *gui.Window) []gui.View {
 				Padding:    gui.Some(gui.Padding{Top: gui.PadMedium, Left: 1, Bottom: gui.PadMedium, Right: gui.PadSmall}),
 				Sizing:     gui.FillFit,
 				SizeBorder: gui.Some(float32(0)),
-				Spacing:    gui.Some(float32(0)),
 				Content: []gui.View{
 					gui.Rectangle(gui.RectangleCfg{
 						Width:  lineThickness,
