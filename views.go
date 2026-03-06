@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	postTextColor    = gui.RGB(0xAA, 0xAA, 0xAA)
+	postTextColor    = gui.RGB(0xB0, 0xB0, 0xB0)
 	postDividerColor = gui.RGB(0x70, 0x70, 0x70)
 )
 
@@ -107,7 +107,7 @@ func timelineView(w *gui.Window) gui.View {
 	ww, wh := w.WindowSize()
 	content := timelineContent(w)
 
-	pad := gui.Padding{Top: 1, Bottom: gui.PadSmall, Left: gui.PadSmall, Right: gui.PadMedium + gui.PadXSmall}
+	pad := gui.NewPadding(1, gui.PadMedium+gui.PadXSmall, gui.PadSmall, gui.PadSmall)
 	return gui.Column(gui.ContainerCfg{
 		IDFocus:    1,
 		IDScroll:   timelineScrollID,
@@ -115,7 +115,7 @@ func timelineView(w *gui.Window) gui.View {
 		Width:      float32(ww),
 		Height:     float32(wh),
 		Sizing:     gui.FixedFixed,
-		Padding:    pad,
+		Padding:    gui.Some(pad),
 		OnAnyClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 			if e.MouseButton == gui.MouseRight {
 				w.ScrollVerticalTo(timelineScrollID, 0)
@@ -124,7 +124,7 @@ func timelineView(w *gui.Window) gui.View {
 		},
 		Content: []gui.View{
 			gui.Column(gui.ContainerCfg{
-				Padding: gui.PaddingNone,
+				Padding: gui.Some(gui.PaddingNone),
 				Sizing:  gui.FillFit,
 				Content: content,
 			}),
@@ -180,7 +180,7 @@ func timelineContent(w *gui.Window) []gui.View {
 
 		if post.FormattedQuoteText != "" {
 			postContent = append(postContent, gui.Row(gui.ContainerCfg{
-				Padding:    gui.Padding{Top: gui.PadMedium, Left: 1, Bottom: gui.PadMedium, Right: gui.PadSmall},
+				Padding:    gui.Some(gui.Padding{Top: gui.PadMedium, Left: 1, Bottom: gui.PadMedium, Right: gui.PadSmall}),
 				Sizing:     gui.FillFit,
 				SizeBorder: gui.Some(float32(0)),
 				Content: []gui.View{
@@ -190,7 +190,7 @@ func timelineContent(w *gui.Window) []gui.View {
 						Color:  postTextColor,
 					}),
 					gui.Column(gui.ContainerCfg{
-						Padding: gui.Padding{Right: gui.PadSmall + gui.PadXSmall},
+						Padding: gui.Some(gui.Padding{Right: gui.PadSmall + gui.PadXSmall}),
 						Sizing:  gui.FillFit,
 						Spacing: gui.Some(float32(0)),
 						Content: []gui.View{
@@ -226,7 +226,7 @@ func timelineContent(w *gui.Window) []gui.View {
 
 			postContent = append(postContent, gui.Column(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Padding: gui.PaddingNone,
+				Padding: gui.Some(gui.PaddingNone),
 				Content: []gui.View{
 					gui.Image(gui.ImageCfg{
 						Src:    post.ImagePath,
@@ -243,7 +243,7 @@ func timelineContent(w *gui.Window) []gui.View {
 		)
 
 		content = append(content, gui.Column(gui.ContainerCfg{
-			Padding: gui.PaddingNone,
+			Padding: gui.Some(gui.PaddingNone),
 			Sizing:  gui.FillFit,
 			Spacing: gui.Some(float32(1)),
 			Content: postContent,
@@ -259,7 +259,7 @@ func isSafeURI(uri string) bool {
 
 func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
 	return gui.Column(gui.ContainerCfg{
-		Padding:    gui.PaddingNone,
+		Padding:    gui.Some(gui.PaddingNone),
 		SizeBorder: gui.Some(float32(0)),
 		Sizing:     gui.FillFit,
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
