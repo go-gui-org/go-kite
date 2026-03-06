@@ -16,6 +16,6 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.6 // indirect
 )
 
-replace github.com/mike-ward/go-gui => ../go_gui
+replace github.com/mike-ward/go-gui => ../go-gui
 
-replace github.com/mike-ward/go-glyph => ../go_glyph
+replace github.com/mike-ward/go-glyph => ../go-glyph

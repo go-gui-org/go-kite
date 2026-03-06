@@ -1,6 +1,6 @@
 # go_kite
 
-A desktop Bluesky client written in Go using [`go_gui`](https://github.com/mike-ward/go-gui).
+A desktop Bluesky client written in Go using [`go-gui`](https://github.com/mike-ward/go-gui).
 
 This repo ports the original V-based Kite app to the new Go GUI framework with feature parity: login, session reuse, timeline polling, links, quoted posts, images, and keyboard font-size shortcuts.
 
@@ -21,13 +21,13 @@ This repo ports the original V-based Kite app to the new Go GUI framework with f
 - Go 1.26+
 - SDL2 development libraries installed
 - Local checkouts of:
-  - `../go_gui`
-  - `../go_glyph`
+  - `../go-gui`
+  - `../go-glyph`
 
 This repo uses local `replace` directives in `go.mod`:
 
-- `github.com/mike-ward/go-gui => ../go_gui`
-- `github.com/mike-ward/go-glyph => ../go_glyph`
+- `github.com/mike-ward/go-gui => ../go-gui`
+- `github.com/mike-ward/go-glyph => ../go-glyph`
 
 ## Run
 
