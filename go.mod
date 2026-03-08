@@ -10,6 +10,7 @@ require (
 
 require (
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
+	github.com/go-pdf/fpdf v0.9.0 // indirect
 	github.com/mike-ward/go-glyph v1.0.0 // indirect
 	github.com/veandco/go-sdl2 v0.4.40 // indirect
 	github.com/yuin/goldmark v1.7.16 // indirect
