@@ -126,6 +126,7 @@ func timelineView(w *gui.Window) gui.View {
 			gui.Column(gui.ContainerCfg{
 				Padding: gui.Some(gui.PaddingNone),
 				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(3),
 				Content: content,
 			}),
 		},
@@ -245,7 +246,7 @@ func timelineContent(w *gui.Window) []gui.View {
 		content = append(content, gui.Column(gui.ContainerCfg{
 			Padding: gui.Some(gui.PaddingNone),
 			Sizing:  gui.FillFit,
-			Spacing: gui.Some(float32(1)),
+			Spacing: gui.SomeF(1),
 			Content: postContent,
 		}))
 	}
