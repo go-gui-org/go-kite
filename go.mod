@@ -11,10 +11,12 @@ require (
 require (
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
 	github.com/go-pdf/fpdf v0.9.0 // indirect
-	github.com/mike-ward/go-glyph v1.1.1 // indirect
+	github.com/godbus/dbus/v5 v5.2.2 // indirect
+	github.com/mike-ward/go-glyph v1.1.3 // indirect
 	github.com/veandco/go-sdl2 v0.4.40 // indirect
 	github.com/yuin/goldmark v1.7.16 // indirect
 	github.com/yuin/goldmark-emoji v1.0.6 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 )
 
 replace github.com/mike-ward/go-gui => ../go-gui
