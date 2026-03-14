@@ -315,7 +315,6 @@ func downloadPostImages(post bSkyPost) {
 			blob, err = getBlob(source.AuthorDID, source.CID)
 		}
 		if err != nil {
-			logError(err.Error())
 			continue
 		}
 
@@ -327,7 +326,6 @@ func downloadPostImages(post bSkyPost) {
 		}
 		if err := saveImage(imageTmpFile, blob); err != nil {
 			lock.Unlock()
-			logError(err.Error())
 			continue
 		}
 		lock.Unlock()
