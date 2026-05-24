@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	postTextColor    = gui.RGB(0xA0, 0xA0, 0xA0)
+	postTextColor    = gui.RGB(0x90, 0x90, 0x90)
 	postDividerColor = gui.RGB(0x70, 0x70, 0x70)
 )
 
