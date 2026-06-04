@@ -261,7 +261,7 @@ func imageDimensions(path string) (float32, float32) {
 	if err != nil {
 		return imageWidth, maxImageHeight
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	cfg, _, err := image.DecodeConfig(f)
 	if err != nil || cfg.Width == 0 || cfg.Height == 0 {
 		return imageWidth, maxImageHeight
@@ -307,7 +307,7 @@ func downloadPostImages(post bSkyPost) {
 				continue
 			}
 			if resp.StatusCode != http.StatusOK {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				continue
 			}
 			blob, err = ioReadAllClose(resp.Body)
@@ -338,7 +338,7 @@ func imageWriteLock(path string) *sync.Mutex {
 }
 
 func ioReadAllClose(r io.ReadCloser) ([]byte, error) {
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 	return io.ReadAll(r)
 }
 
@@ -418,7 +418,7 @@ func saveImage(name string, blob []byte) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	return jpeg.Encode(f, dst, &jpeg.Options{Quality: jpegQuality})
 }
 

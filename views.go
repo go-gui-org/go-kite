@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/go-gui-org/go-gui/gui"
@@ -288,7 +287,7 @@ func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
 		},
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text:      fmt.Sprintf("%s", linkTitle),
+				Text:      linkTitle,
 				Mode:      gui.TextModeWrap,
 				TextStyle: textStyle,
 			}),

@@ -39,7 +39,7 @@ func createSession(identifier, password string) (BSkySession, error) {
 	if err != nil {
 		return BSkySession{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -68,7 +68,7 @@ func refreshBSkySession(session BSkySession) (refreshSessionResponse, error) {
 	if err != nil {
 		return refreshSessionResponse{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -98,7 +98,7 @@ func getTimeline(session BSkySession) (bSkyTimeline, error) {
 	if err != nil {
 		return bSkyTimeline{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -125,7 +125,7 @@ func getBlob(did, cid string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
