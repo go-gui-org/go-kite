@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/go-gui-org/go-gui v0.21.1
+	github.com/go-gui-org/go-gui v0.25.0
 	golang.org/x/image v0.37.0
 )
 
@@ -20,11 +20,6 @@ require (
 	github.com/veandco/go-sdl2 v0.4.40 // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
 	github.com/yuin/goldmark-emoji v1.0.6 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
-)
-
-replace (
-	github.com/go-gui-org/go-glyph => ../go-glyph
-	github.com/go-gui-org/go-gui => ../go-gui
 )
