@@ -23,8 +23,3 @@ require (
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 )
-
-replace (
-	github.com/go-gui-org/go-glyph => ../go-glyph
-	github.com/go-gui-org/go-gui => ../go-gui
-)
