@@ -18,6 +18,8 @@ main
 *.dylib
 
 # Built example binaries
+Kite.app/
+*.app/
 
 # Test binary
 *.test
