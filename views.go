@@ -31,9 +31,10 @@ func loginView(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Login", TextStyle: gui.CurrentTheme().B1}),
 			gui.Input(gui.InputCfg{
+				ID:          "login-username",
 				Text:        app.UserName,
 				Placeholder: "User Name",
-				IDFocus:     1,
+				Focusable:   true,
 				Sizing:      gui.FixedFit,
 				Width:       fieldWidth,
 				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
@@ -41,10 +42,11 @@ func loginView(w *gui.Window) gui.View {
 				},
 			}),
 			gui.Input(gui.InputCfg{
+				ID:          "login-password",
 				IsPassword:  true,
 				Text:        app.Password,
 				Placeholder: "Password",
-				IDFocus:     2,
+				Focusable:   true,
 				Sizing:      gui.FixedFit,
 				Width:       fieldWidth,
 				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
@@ -52,8 +54,9 @@ func loginView(w *gui.Window) gui.View {
 				},
 			}),
 			gui.Button(gui.ButtonCfg{
-				Disabled: app.LoginPending || strings.TrimSpace(app.UserName) == "" || strings.TrimSpace(app.Password) == "",
-				IDFocus:  3,
+				Disabled:  app.LoginPending || strings.TrimSpace(app.UserName) == "" || strings.TrimSpace(app.Password) == "",
+				ID:        "login-submit",
+				Focusable: true,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Submit"}),
 				},
@@ -108,7 +111,8 @@ func timelineView(w *gui.Window) gui.View {
 
 	pad := gui.NewPadding(1, gui.PadMedium+gui.PadXSmall, gui.PadSmall, gui.PadSmall)
 	return gui.Column(gui.ContainerCfg{
-		IDFocus:    1,
+		ID:         "timeline",
+		Focusable:  true,
 		IDScroll:   timelineScrollID,
 		ScrollMode: gui.ScrollVerticalOnly,
 		Width:      float32(ww),
