@@ -8,7 +8,7 @@ import (
 
 const (
 	fieldWidth       = 250
-	timelineScrollID = 1
+	timelineScrollID = "timeline"
 	lineThickness    = 0.5
 	maxTimelinePosts = 25
 )
@@ -111,9 +111,9 @@ func timelineView(w *gui.Window) gui.View {
 
 	pad := gui.NewPadding(1, gui.PadMedium+gui.PadXSmall, gui.PadSmall, gui.PadSmall)
 	return gui.Column(gui.ContainerCfg{
-		ID:         "timeline",
+		ID:         timelineScrollID,
 		Focusable:  true,
-		IDScroll:   timelineScrollID,
+		Scrollable: true,
 		ScrollMode: gui.ScrollVerticalOnly,
 		Width:      float32(ww),
 		Height:     float32(wh),
