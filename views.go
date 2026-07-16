@@ -34,7 +34,6 @@ func loginView(w *gui.Window) gui.View {
 				ID:          "login-username",
 				Text:        app.UserName,
 				Placeholder: "User Name",
-				Focusable:   true,
 				Sizing:      gui.FixedFit,
 				Width:       fieldWidth,
 				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
@@ -46,7 +45,6 @@ func loginView(w *gui.Window) gui.View {
 				IsPassword:  true,
 				Text:        app.Password,
 				Placeholder: "Password",
-				Focusable:   true,
 				Sizing:      gui.FixedFit,
 				Width:       fieldWidth,
 				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
