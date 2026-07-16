@@ -54,7 +54,6 @@ func loginView(w *gui.Window) gui.View {
 			gui.Button(gui.ButtonCfg{
 				Disabled:  app.LoginPending || strings.TrimSpace(app.UserName) == "" || strings.TrimSpace(app.Password) == "",
 				ID:        "login-submit",
-				Focusable: true,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Submit"}),
 				},
