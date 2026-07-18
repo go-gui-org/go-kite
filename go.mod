@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/go-gui-org/go-gui v0.38.1
+	github.com/go-gui-org/go-gui v0.39.0
 	golang.org/x/image v0.44.0
 )
 
@@ -13,7 +13,7 @@ require (
 	github.com/dlclark/regexp2/v2 v2.2.2 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276 // indirect
-	github.com/go-gui-org/go-glyph v1.17.1 // indirect
+	github.com/go-gui-org/go-glyph v1.17.2 // indirect
 	github.com/go-pdf/fpdf v0.9.0 // indirect
 	github.com/go-text/typesetting v0.3.4 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
