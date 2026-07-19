@@ -85,3 +85,81 @@ func minimalPost(text string) bSkyPost {
 	p.Post.Record.CreatedAt = "2025-01-01T00:00:00Z"
 	return p
 }
+
+func revealPost(id, repostBy string) Post {
+	return Post{ID: id, RepostBy: repostBy, FormattedText: "text"}
+}
+
+func TestSetRevealAnchorOnPrepend(t *testing.T) {
+	app := &App{Timeline: Timeline{Posts: []Post{revealPost("a", "")}}}
+	incoming := Timeline{Posts: []Post{revealPost("b", ""), revealPost("a", "")}}
+
+	setRevealAnchor(app, incoming)
+	if app.RevealAnchorID != postViewID(revealPost("a", "")) {
+		t.Fatalf("unexpected anchor: %q", app.RevealAnchorID)
+	}
+}
+
+func TestSetRevealAnchorNoChange(t *testing.T) {
+	app := &App{Timeline: Timeline{Posts: []Post{revealPost("a", "")}}}
+	incoming := Timeline{Posts: []Post{revealPost("a", "")}}
+
+	setRevealAnchor(app, incoming)
+	if app.RevealAnchorID != "" {
+		t.Fatalf("anchor set on unchanged timeline: %q", app.RevealAnchorID)
+	}
+}
+
+func TestSetRevealAnchorInitialLoad(t *testing.T) {
+	app := &App{}
+	incoming := Timeline{Posts: []Post{revealPost("a", "")}}
+
+	setRevealAnchor(app, incoming)
+	if app.RevealAnchorID != "" {
+		t.Fatalf("anchor set on initial load: %q", app.RevealAnchorID)
+	}
+}
+
+func TestFirstRenderedPostIDSkipsEmptyPosts(t *testing.T) {
+	tl := Timeline{Posts: []Post{
+		{ID: "empty", FormattedText: "  "},
+		revealPost("a", ""),
+	}}
+	if got := firstRenderedPostID(tl); got != postViewID(revealPost("a", "")) {
+		t.Fatalf("unexpected first rendered id: %q", got)
+	}
+	if got := firstRenderedPostID(Timeline{}); got != "" {
+		t.Fatalf("expected empty id for empty timeline, got %q", got)
+	}
+}
+
+func TestPostViewIDDisambiguatesReposts(t *testing.T) {
+	if postViewID(revealPost("a", "")) == postViewID(revealPost("a", "bob")) {
+		t.Fatal("post and its repost must have distinct view IDs")
+	}
+}
+
+func TestPostIsRendered(t *testing.T) {
+	if postIsRendered(Post{}) {
+		t.Fatal("empty post should not be rendered")
+	}
+	if postIsRendered(Post{FormattedText: "  "}) {
+		t.Fatal("post with whitespace-only FormattedText should not be rendered")
+	}
+	if !postIsRendered(Post{FormattedText: "hello"}) {
+		t.Fatal("post with FormattedText should be rendered")
+	}
+	if !postIsRendered(Post{FormattedQuoteText: "quote"}) {
+		t.Fatal("post with only FormattedQuoteText should be rendered")
+	}
+}
+
+func TestSetRevealAnchorPostsReplaced(t *testing.T) {
+	app := &App{Timeline: Timeline{Posts: []Post{revealPost("old", "")}}}
+	incoming := Timeline{Posts: []Post{revealPost("new", "")}}
+
+	setRevealAnchor(app, incoming)
+	if app.RevealAnchorID != postViewID(revealPost("old", "")) {
+		t.Fatalf("anchor should be set when old post is replaced: %q", app.RevealAnchorID)
+	}
+}
