@@ -16,19 +16,6 @@ This repo ports the original V-based Kite app to the new Go GUI framework with f
 - Font size controls: `Alt+Up` and `Alt+Down`
 - Right-click timeline to jump to top
 
-## Requirements
-
-- Go 1.26+
-- SDL2 development libraries installed
-- Local checkouts of:
-  - `../go-gui`
-  - `../go-glyph`
-
-This repo uses local `replace` directives in `go.mod`:
-
-- `github.com/go-gui-org/go-gui => ../go-gui`
-- `github.com/go-gui-org/go-glyph => ../go-glyph`
-
 ## Run
 
 ```bash
