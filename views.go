@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"strings"
+	"time"
 
 	"github.com/go-gui-org/go-gui/gui"
 )
@@ -13,6 +14,11 @@ const (
 	timelineContentID = "timeline-content"
 	lineThickness     = 0.5
 	maxTimelinePosts  = 25
+
+	// idleRevealAfter: with no user interaction for this long, a
+	// prepend reveals new posts (scrolls to top) even from a held
+	// position.
+	idleRevealAfter = 10 * time.Minute
 )
 
 var (
@@ -54,8 +60,8 @@ func loginView(w *gui.Window) gui.View {
 				},
 			}),
 			gui.Button(gui.ButtonCfg{
-				Disabled:  app.LoginPending || strings.TrimSpace(app.UserName) == "" || strings.TrimSpace(app.Password) == "",
-				ID:        "login-submit",
+				Disabled: app.LoginPending || strings.TrimSpace(app.UserName) == "" || strings.TrimSpace(app.Password) == "",
+				ID:       "login-submit",
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Submit"}),
 				},
@@ -227,8 +233,15 @@ func revealAmend(layout *gui.Layout, w *gui.Window) {
 	// next frames lay out identically.
 	shiftSubtreeY(content, -delta)
 	w.ScrollVerticalTo(timelineScrollID, newOffset)
-	// Reading position is now preserved. New posts sit above the
-	// viewport; the user scrolls up to see them when ready.
+	// Ease back to the top so the new posts glide into view instead
+	// of appearing suddenly — when the reader was at the top before
+	// the prepend (offset <= 0; within half a px counts), or has not
+	// touched the app for idleRevealAfter (walked away; follow the
+	// ticker). Otherwise hold the anchored reading position. Any user
+	// scroll (wheel, trackpad, scrollbar) cancels the ease.
+	if offset >= -0.5 || time.Since(app.LastInteraction) >= idleRevealAfter {
+		w.ScrollVerticalToSmooth(timelineScrollID, 0)
+	}
 }
 
 // shiftSubtreeY moves a layout and all its descendants vertically.

@@ -17,6 +17,11 @@ type App struct {
 	// revealAmend on the next layout pass: the old content is anchored
 	// in place, then the view eases up to reveal the new posts.
 	RevealAnchorID string
+
+	// LastInteraction is when the user last interacted with the window
+	// (any input event reaching appOnEvent). Zero (startup) reads as
+	// long-idle, so the first prepend reveals.
+	LastInteraction time.Time
 }
 
 type Timeline struct {
