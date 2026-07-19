@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/go-gui-org/go-gui/gui"
 	"github.com/go-gui-org/go-gui/gui/backend"
@@ -50,6 +51,12 @@ func processArgs(app *App) {
 }
 
 func appOnEvent(e *gui.Event, w *gui.Window) {
+	// Presence tracking for the idle-reveal gate in revealAmend. Only
+	// unhandled events arrive here, but a user at the machine emits a
+	// steady stream of them (mouse moves, key ups); programmatic
+	// scrolls and animation ticks emit none.
+	gui.State[App](w).LastInteraction = time.Now()
+
 	if e.Type != gui.EventKeyDown || !e.Modifiers.Has(gui.ModAlt) {
 		return
 	}
