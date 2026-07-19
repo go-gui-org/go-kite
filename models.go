@@ -11,6 +11,12 @@ type App struct {
 	ShowImages   bool
 	LoginPending bool
 	LoopCancel   chan struct{}
+
+	// RevealAnchorID is the view ID of the post that was at the top of
+	// the timeline before a refresh prepended new posts. Consumed by
+	// revealAmend on the next layout pass: the old content is anchored
+	// in place, then the view eases up to reveal the new posts.
+	RevealAnchorID string
 }
 
 type Timeline struct {

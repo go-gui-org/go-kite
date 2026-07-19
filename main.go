@@ -39,7 +39,7 @@ func main() {
 		},
 	})
 
-	changeFontSize(-0.5, 4, 30, w)
+	changeFontSize(-2.5, 4, 30, w)
 	backend.Run(w)
 }
 

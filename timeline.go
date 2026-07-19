@@ -88,6 +88,7 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession, sh
 		timeline := fromBlueskyTimeline(blueskyTimeline, maxTimelinePosts)
 		w.QueueCommand(func(w *gui.Window) {
 			app := gui.State[App](w)
+			setRevealAnchor(app, timeline)
 			app.Timeline = timeline
 			app.ErrorMsg = ""
 			w.UpdateWindow()
@@ -104,6 +105,19 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession, sh
 
 		fallbackCounter = 0
 		sleepOrCancel(cancel, time.Minute)
+	}
+}
+
+// setRevealAnchor records the post currently at the top of the
+// timeline when an incoming refresh moves it down (new posts were
+// prepended). revealAmend consumes the anchor on the next layout
+// pass to scroll the new posts in instead of jumping. Initial load
+// (empty old timeline) and no-change refreshes set nothing.
+func setRevealAnchor(app *App, incoming Timeline) {
+	oldID := firstRenderedPostID(app.Timeline)
+	newID := firstRenderedPostID(incoming)
+	if oldID != "" && newID != "" && oldID != newID {
+		app.RevealAnchorID = oldID
 	}
 }
 
