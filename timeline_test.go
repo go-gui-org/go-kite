@@ -90,33 +90,29 @@ func revealPost(id, repostBy string) Post {
 	return Post{ID: id, RepostBy: repostBy, FormattedText: "text"}
 }
 
-func TestSetRevealAnchorOnPrepend(t *testing.T) {
-	app := &App{Timeline: Timeline{Posts: []Post{revealPost("a", "")}}}
+func TestRevealAnchorIDOnPrepend(t *testing.T) {
+	old := Timeline{Posts: []Post{revealPost("a", "")}}
 	incoming := Timeline{Posts: []Post{revealPost("b", ""), revealPost("a", "")}}
 
-	setRevealAnchor(app, incoming)
-	if app.RevealAnchorID != postViewID(revealPost("a", "")) {
-		t.Fatalf("unexpected anchor: %q", app.RevealAnchorID)
+	if got := timelineRevealAnchorID(old, incoming); got != postViewID(revealPost("a", "")) {
+		t.Fatalf("unexpected anchor: %q", got)
 	}
 }
 
-func TestSetRevealAnchorNoChange(t *testing.T) {
-	app := &App{Timeline: Timeline{Posts: []Post{revealPost("a", "")}}}
+func TestRevealAnchorIDNoChange(t *testing.T) {
+	old := Timeline{Posts: []Post{revealPost("a", "")}}
 	incoming := Timeline{Posts: []Post{revealPost("a", "")}}
 
-	setRevealAnchor(app, incoming)
-	if app.RevealAnchorID != "" {
-		t.Fatalf("anchor set on unchanged timeline: %q", app.RevealAnchorID)
+	if got := timelineRevealAnchorID(old, incoming); got != "" {
+		t.Fatalf("anchor set on unchanged timeline: %q", got)
 	}
 }
 
-func TestSetRevealAnchorInitialLoad(t *testing.T) {
-	app := &App{}
+func TestRevealAnchorIDInitialLoad(t *testing.T) {
 	incoming := Timeline{Posts: []Post{revealPost("a", "")}}
 
-	setRevealAnchor(app, incoming)
-	if app.RevealAnchorID != "" {
-		t.Fatalf("anchor set on initial load: %q", app.RevealAnchorID)
+	if got := timelineRevealAnchorID(Timeline{}, incoming); got != "" {
+		t.Fatalf("anchor set on initial load: %q", got)
 	}
 }
 
@@ -154,12 +150,11 @@ func TestPostIsRendered(t *testing.T) {
 	}
 }
 
-func TestSetRevealAnchorPostsReplaced(t *testing.T) {
-	app := &App{Timeline: Timeline{Posts: []Post{revealPost("old", "")}}}
+func TestRevealAnchorIDPostsReplaced(t *testing.T) {
+	old := Timeline{Posts: []Post{revealPost("old", "")}}
 	incoming := Timeline{Posts: []Post{revealPost("new", "")}}
 
-	setRevealAnchor(app, incoming)
-	if app.RevealAnchorID != postViewID(revealPost("old", "")) {
-		t.Fatalf("anchor should be set when old post is replaced: %q", app.RevealAnchorID)
+	if got := timelineRevealAnchorID(old, incoming); got != postViewID(revealPost("old", "")) {
+		t.Fatalf("anchor should be set when old post is replaced: %q", got)
 	}
 }

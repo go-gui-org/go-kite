@@ -88,7 +88,7 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession, sh
 		timeline := fromBlueskyTimeline(blueskyTimeline, maxTimelinePosts)
 		w.QueueCommand(func(w *gui.Window) {
 			app := gui.State[App](w)
-			setRevealAnchor(app, timeline)
+			anchorTimelineReveal(app, timeline, w)
 			app.Timeline = timeline
 			app.ErrorMsg = ""
 			w.UpdateWindow()
@@ -108,17 +108,40 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession, sh
 	}
 }
 
-// setRevealAnchor records the post currently at the top of the
-// timeline when an incoming refresh moves it down (new posts were
-// prepended). revealAmend consumes the anchor on the next layout
-// pass to scroll the new posts in instead of jumping. Initial load
-// (empty old timeline) and no-change refreshes set nothing.
-func setRevealAnchor(app *App, incoming Timeline) {
-	oldID := firstRenderedPostID(app.Timeline)
-	newID := firstRenderedPostID(incoming)
-	if oldID != "" && newID != "" && oldID != newID {
-		app.RevealAnchorID = oldID
+// anchorTimelineReveal keeps the reading position stable when an
+// incoming refresh moves the current top post down (new posts were
+// prepended): the old top post is scroll-anchored, so the next layout
+// pass holds it visually in place instead of jumping. When the reader
+// is at the top (within half a px counts) or has not touched the app
+// for idleRevealAfter (walked away; follow the ticker), the view then
+// eases to the top so the new posts glide into view. Any user scroll
+// cancels the ease. Initial load (empty old timeline) and no-change
+// refreshes do nothing. Must run before app.Timeline is replaced —
+// the anchor captures the old post's on-screen position.
+func anchorTimelineReveal(app *App, incoming Timeline, w *gui.Window) {
+	anchorID := timelineRevealAnchorID(app.Timeline, incoming)
+	if anchorID == "" {
+		return
 	}
+	atTop := w.ScrollVerticalOffset(timelineScrollID) >= -0.5
+	if atTop || time.Since(app.LastInteraction) >= idleRevealAfter {
+		w.ScrollAnchorReveal(timelineScrollID, anchorID)
+	} else {
+		w.ScrollAnchor(timelineScrollID, anchorID)
+	}
+}
+
+// timelineRevealAnchorID returns the view ID of the post to anchor
+// across a refresh — the current top post, when the incoming timeline
+// moves or replaces it — or "" when nothing should be anchored
+// (initial load, empty incoming timeline, no-change refresh).
+func timelineRevealAnchorID(old, incoming Timeline) string {
+	oldID := firstRenderedPostID(old)
+	newID := firstRenderedPostID(incoming)
+	if oldID == "" || newID == "" || oldID == newID {
+		return ""
+	}
+	return oldID
 }
 
 func sleepOrCancel(cancel <-chan struct{}, d time.Duration) {
