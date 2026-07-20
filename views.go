@@ -303,6 +303,9 @@ func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
 		Sizing:     gui.FillFit,
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 			e.IsHandled = true
+			if e.MouseButton != gui.MouseLeft {
+				return
+			}
 			if !isSafeURI(linkURI) {
 				return
 			}
