@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/go-gui-org/go-gui v0.41.1
+	github.com/go-gui-org/go-gui v0.42.0
 	golang.org/x/image v0.44.0
 )
 
