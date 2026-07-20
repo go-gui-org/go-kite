@@ -298,7 +298,6 @@ func timelineContent(w *gui.Window) []gui.View {
 
 		postContent = append(postContent,
 			textLink(post.FormattedTimeAuthor, post.BSkyLinkURI, baseTextStyle),
-			gui.Rectangle(gui.RectangleCfg{Height: gui.PadXSmall - 1}),
 			gui.Text(gui.TextCfg{Text: post.FormattedText, Mode: gui.TextModeWrap, TextStyle: postTextStyle}),
 		)
 
@@ -329,7 +328,8 @@ func timelineContent(w *gui.Window) []gui.View {
 		}
 
 		if post.LinkURI != "" {
-			postContent = append(postContent, textLink(post.LinkTitle, post.LinkURI, postLinkStyle))
+			postContent = append(postContent,
+				textLink(post.LinkTitle, post.LinkURI, postLinkStyle))
 		}
 
 		if post.ImagePath != "" && app.ShowImages {
@@ -352,18 +352,20 @@ func timelineContent(w *gui.Window) []gui.View {
 			postContent = append(postContent, gui.Column(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
 				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.NoSpacing,
 				Content: []gui.View{
 					gui.Image(gui.ImageCfg{
 						Src:    post.ImagePath,
 						Width:  width,
 						Height: height,
 					}),
+					gui.Rectangle(gui.RectangleCfg{Height: 3}),
 				},
 			}))
 		}
 
 		postContent = append(postContent,
-			gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
+			gui.Rectangle(gui.RectangleCfg{Height: 1}),
 			gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
 		)
 
