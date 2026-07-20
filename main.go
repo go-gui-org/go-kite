@@ -40,7 +40,7 @@ func main() {
 		},
 	})
 
-	changeFontSize(-2.5, 4, 30, w)
+	changeFontSize(-2.25, 4, 30, w)
 	backend.Run(w)
 }
 
@@ -51,7 +51,8 @@ func processArgs(app *App) {
 }
 
 func appOnEvent(e *gui.Event, w *gui.Window) {
-	// Presence tracking for the idle-reveal gate in revealAmend. Only
+	// Presence tracking for the idle-reveal gate in
+	// anchorTimelineReveal. Only
 	// unhandled events arrive here, but a user at the machine emits a
 	// steady stream of them (mouse moves, key ups); programmatic
 	// scrolls and animation ticks emit none.

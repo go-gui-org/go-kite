@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"strings"
 	"time"
 
@@ -130,7 +129,6 @@ func timelineView(w *gui.Window) gui.View {
 				e.IsHandled = true
 			}
 		},
-		AmendLayout: revealAmend,
 		Content: []gui.View{
 			gui.Column(gui.ContainerCfg{
 				ID:      timelineContentID,
@@ -166,94 +164,6 @@ func firstRenderedPostID(t Timeline) string {
 		}
 	}
 	return ""
-}
-
-// revealAmend runs after layout positions are computed, before the
-// frame renders. When a refresh just prepended posts (RevealAnchorID
-// set), it keeps the old content visually in place for this frame and
-// then eases the scroll offset to the top, so new posts glide into
-// view instead of appearing suddenly. AmendLayout works on absolute
-// coordinates and moving a parent does not move its children, so the
-// whole content subtree is shifted manually.
-func revealAmend(layout *gui.Layout, w *gui.Window) {
-	if layout == nil || layout.Shape == nil {
-		return
-	}
-	app := gui.State[App](w)
-	if app.RevealAnchorID == "" {
-		return
-	}
-	anchorID := app.RevealAnchorID
-	app.RevealAnchorID = ""
-
-	firstID := firstRenderedPostID(app.Timeline)
-	if firstID == "" || firstID == anchorID {
-		return
-	}
-	anchor, okAnchor := layout.FindByID(anchorID)
-	content, okContent := layout.FindByID(timelineContentID)
-	first, okFirst := layout.FindByID(firstID)
-	if !okAnchor || !okContent || !okFirst {
-		return // anchor post fell off the timeline; jump as before
-	}
-	if anchor.Shape == nil || first.Shape == nil || content.Shape == nil {
-		return
-	}
-
-	// Height of the prepended posts: how far the anchor (previously
-	// the first post, at the very top of the content column) now sits
-	// below the new first post.
-	delta := anchor.Shape.Y - first.Shape.Y
-	if delta <= 0 || math.IsNaN(float64(delta)) || math.IsInf(float64(delta), 0) {
-		return
-	}
-
-	// Current displayed offset (<= 0, 0 = top): content top relative
-	// to the viewport top.
-	viewTop := layout.Shape.Y + layout.Shape.Padding.Top
-	offset := content.Shape.Y - viewTop
-	if math.IsNaN(float64(offset)) || math.IsInf(float64(offset), 0) {
-		return
-	}
-
-	// Anchoring must stay within the scrollable range or the offset
-	// written below would be clamped, snapping the view next frame.
-	viewH := layout.Shape.Height - layout.Shape.Padding.Top - layout.Shape.Padding.Bottom
-	maxOffset := viewH - content.Shape.Height // negative when content overflows
-	newOffset := offset - delta
-	if math.IsNaN(float64(newOffset)) || math.IsInf(float64(newOffset), 0) {
-		return
-	}
-	if maxOffset >= 0 || newOffset < maxOffset {
-		return // content fits the viewport or shrank past the user's position
-	}
-
-	// Glue the view to the anchor for this frame: shift the already
-	// positioned subtree up, and record the matching offset so the
-	// next frames lay out identically.
-	shiftSubtreeY(content, -delta)
-	w.ScrollVerticalTo(timelineScrollID, newOffset)
-	// Ease back to the top so the new posts glide into view instead
-	// of appearing suddenly — when the reader was at the top before
-	// the prepend (offset <= 0; within half a px counts), or has not
-	// touched the app for idleRevealAfter (walked away; follow the
-	// ticker). Otherwise hold the anchored reading position. Any user
-	// scroll (wheel, trackpad, scrollbar) cancels the ease.
-	if offset >= -0.5 || time.Since(app.LastInteraction) >= idleRevealAfter {
-		w.ScrollVerticalToSmooth(timelineScrollID, 0)
-	}
-}
-
-// shiftSubtreeY moves a layout and all its descendants vertically.
-func shiftSubtreeY(layout *gui.Layout, dy float32) {
-	if layout == nil || layout.Shape == nil ||
-		math.IsNaN(float64(dy)) || math.IsInf(float64(dy), 0) {
-		return
-	}
-	layout.Shape.Y += dy
-	for i := range layout.Children {
-		shiftSubtreeY(&layout.Children[i], dy)
-	}
 }
 
 func timelineContent(w *gui.Window) []gui.View {
