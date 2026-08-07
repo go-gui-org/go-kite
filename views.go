@@ -43,8 +43,8 @@ func loginView(w *gui.Window) gui.View {
 				Placeholder: "User Name",
 				Sizing:      gui.FixedFit,
 				Width:       fieldWidth,
-				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-					gui.State[App](w).UserName = s
+				OnTextChanged: func(s string, ctx gui.EventCtx) {
+					gui.State[App](ctx.Window).UserName = s
 				},
 			}),
 			gui.Input(gui.InputCfg{
@@ -54,8 +54,8 @@ func loginView(w *gui.Window) gui.View {
 				Placeholder: "Password",
 				Sizing:      gui.FixedFit,
 				Width:       fieldWidth,
-				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-					gui.State[App](w).Password = s
+				OnTextChanged: func(s string, ctx gui.EventCtx) {
+					gui.State[App](ctx.Window).Password = s
 				},
 			}),
 			gui.Button(gui.ButtonCfg{
@@ -64,8 +64,8 @@ func loginView(w *gui.Window) gui.View {
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Submit"}),
 				},
-				OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
-					app := gui.State[App](w)
+				OnClick: func(ctx gui.EventCtx) {
+					app := gui.State[App](ctx.Window)
 					if app.LoginPending {
 						return
 					}
@@ -73,7 +73,7 @@ func loginView(w *gui.Window) gui.View {
 					app.ErrorMsg = ""
 					username := app.UserName
 					password := app.Password
-					go loginAsync(username, password, w)
+					go loginAsync(username, password, ctx.Window)
 				},
 			}),
 			gui.Text(gui.TextCfg{
@@ -123,10 +123,10 @@ func timelineView(w *gui.Window) gui.View {
 		Height:     float32(wh),
 		Sizing:     gui.FixedFixed,
 		Padding:    gui.Some(pad),
-		OnAnyClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
-			if e.MouseButton == gui.MouseRight {
-				w.ScrollVerticalTo(timelineScrollID, 0)
-				e.IsHandled = true
+		OnAnyClick: func(ctx gui.EventCtx) {
+			if ctx.Event.MouseButton == gui.MouseRight {
+				ctx.Window.ScrollVerticalTo(timelineScrollID, 0)
+				ctx.Consume()
 			}
 		},
 		Content: []gui.View{
@@ -301,15 +301,15 @@ func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
 		Padding:    gui.Some(gui.PaddingNone),
 		SizeBorder: gui.Some(float32(0)),
 		Sizing:     gui.FillFit,
-		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
-			e.IsHandled = true
-			if e.MouseButton != gui.MouseLeft {
+		OnClick: func(ctx gui.EventCtx) {
+			ctx.Consume()
+			if ctx.Event.MouseButton != gui.MouseLeft {
 				return
 			}
 			if !isSafeURI(linkURI) {
 				return
 			}
-			np := w.NativePlatformBackend()
+			np := ctx.Window.NativePlatformBackend()
 			if np == nil {
 				return
 			}
@@ -317,14 +317,14 @@ func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
 				logError(err.Error())
 			}
 		},
-		OnHover: func(layout *gui.Layout, e *gui.Event, w *gui.Window) {
-			e.IsHandled = true
-			if len(layout.Children) > 0 && layout.Children[0].Shape != nil && layout.Children[0].Shape.TC != nil {
-				ts := layout.Children[0].Shape.TC.TextStyle
+		OnHover: func(ctx gui.EventCtx) {
+			ctx.Consume()
+			if len(ctx.Layout.Children) > 0 && ctx.Layout.Children[0].Shape != nil && ctx.Layout.Children[0].Shape.TC != nil {
+				ts := ctx.Layout.Children[0].Shape.TC.TextStyle
 				ts.Color = gui.CornflowerBlue
-				layout.Children[0].Shape.TC.TextStyle = ts
+				ctx.Layout.Children[0].Shape.TC.TextStyle = ts
 			}
-			w.SetMouseCursorPointingHand()
+			ctx.Window.SetMouseCursorPointingHand()
 		},
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
