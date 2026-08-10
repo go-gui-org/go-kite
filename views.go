@@ -122,7 +122,7 @@ func timelineView(w *gui.Window) gui.View {
 		Width:      float32(ww),
 		Height:     float32(wh),
 		Sizing:     gui.FixedFixed,
-		Padding:    gui.Some(pad),
+		Padding:    pad,
 		OnAnyClick: func(ctx gui.EventCtx) {
 			if ctx.Event.MouseButton == gui.MouseRight {
 				ctx.Window.ScrollVerticalTo(timelineScrollID, 0)
@@ -132,7 +132,7 @@ func timelineView(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Column(gui.ContainerCfg{
 				ID:      timelineContentID,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.PaddingNone,
 				Sizing:  gui.FillFit,
 				Spacing: gui.SomeF(3),
 				Content: content,
@@ -213,7 +213,7 @@ func timelineContent(w *gui.Window) []gui.View {
 
 		if post.FormattedQuoteText != "" {
 			postContent = append(postContent, gui.Row(gui.ContainerCfg{
-				Padding:    gui.Some(gui.Padding{Top: gui.PadMedium, Left: 1, Bottom: gui.PadMedium, Right: gui.PadSmall}),
+				Padding:    gui.NewPadding(gui.PadMedium, gui.PadSmall, gui.PadMedium, 1),
 				Sizing:     gui.FillFit,
 				Spacing:    gui.SomeF(7.5),
 				SizeBorder: gui.Some(float32(0)),
@@ -224,7 +224,7 @@ func timelineContent(w *gui.Window) []gui.View {
 						Color:  postTextColor,
 					}),
 					gui.Column(gui.ContainerCfg{
-						Padding: gui.Some(gui.Padding{Right: gui.PadSmall + gui.PadXSmall}),
+						Padding: gui.NewPadding(0, gui.PadSmall+gui.PadXSmall, 0, 0),
 						Sizing:  gui.FillFit,
 						Spacing: gui.Some(float32(0)),
 						Content: []gui.View{
@@ -261,7 +261,7 @@ func timelineContent(w *gui.Window) []gui.View {
 
 			postContent = append(postContent, gui.Column(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.PaddingNone,
 				Spacing: gui.NoSpacing,
 				Content: []gui.View{
 					gui.Image(gui.ImageCfg{
@@ -282,7 +282,7 @@ func timelineContent(w *gui.Window) []gui.View {
 		content = append(content, gui.Column(gui.ContainerCfg{
 			// Stable ID so revealAmend can locate posts across refreshes.
 			ID:      postViewID(post),
-			Padding: gui.Some(gui.PaddingNone),
+			Padding: gui.PaddingNone,
 			Sizing:  gui.FillFit,
 			Spacing: gui.SomeF(1),
 			Content: postContent,
@@ -298,7 +298,7 @@ func isSafeURI(uri string) bool {
 
 func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
 	return gui.Column(gui.ContainerCfg{
-		Padding:    gui.Some(gui.PaddingNone),
+		Padding:    gui.PaddingNone,
 		SizeBorder: gui.Some(float32(0)),
 		Sizing:     gui.FillFit,
 		OnClick: func(ctx gui.EventCtx) {
