@@ -12,6 +12,12 @@ BUILDAPP_BIN := $(BUILDAPP_DIR)/buildapp
 # go-gui checkout still works.
 GO := GOWORK=off go
 
+# golangci-lint is its own binary, so $(GO) does not cover it — but it
+# honours go.work the same way the toolchain does. Without GOWORK=off it
+# would type-check against sibling working copies and report breakage that
+# CI, which builds the pinned versions, will never see.
+LINT := GOWORK=off golangci-lint
+
 all: $(APP_NAME).app
 
 $(KITE_BIN): *.go go.mod go.sum
@@ -45,7 +51,7 @@ vet:
 # carries no .golangci.yml, so both CI and this target run the golangci-lint
 # defaults. Keep it unpinned so the two stay in agreement.
 lint:
-	golangci-lint run ./...
+	$(LINT) run ./...
 
 build:
 	$(GO) build ./...
