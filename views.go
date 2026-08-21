@@ -208,6 +208,7 @@ func timelineContent(w *gui.Window) []gui.View {
 
 		postContent = append(postContent,
 			textLink(post.FormattedTimeAuthor, post.BSkyLinkURI, baseTextStyle),
+			gui.Rectangle(gui.RectangleCfg{Height: 2, Width: 1}), // spacer
 			gui.Text(gui.TextCfg{Text: post.FormattedText, Mode: gui.TextModeWrap, TextStyle: postTextStyle}),
 		)
 
@@ -239,6 +240,7 @@ func timelineContent(w *gui.Window) []gui.View {
 
 		if post.LinkURI != "" {
 			postContent = append(postContent,
+				gui.Rectangle(gui.RectangleCfg{Height: 2, Width: 1}), // spacer
 				textLink(post.LinkTitle, post.LinkURI, postLinkStyle))
 		}
 
