@@ -14,17 +14,36 @@ const (
 )
 
 func main() {
-	gui.SetTheme(gui.ThemeDark.WithBorders(true))
-
 	app := &App{ShowImages: true}
 	processArgs(app)
 
-	w := gui.NewWindow(gui.WindowCfg{
+	w := gui.NewWindow(kiteWindowCfg(app))
+	// Startup font tuning (see textutil.go): pins the window's theme to a
+	// smaller text size so the 300px-wide timeline fits more content.
+	// Cannot live in kiteWindowCfg — it needs the window handle, which
+	// only exists after NewWindow. Without it the app opens at the
+	// theme's default size and only changes once the user presses Alt+↑.
+	changeFontSize(-2.25, 4, 30, w)
+	backend.Run(w)
+}
+
+// kiteWindowCfg is split out of main so TestWindowCfgWiring can inspect the
+// config without opening a window. The icon fields in particular are silent
+// when wrong — they produce the wrong artwork, not an error.
+func kiteWindowCfg(app *App) gui.WindowCfg {
+	return gui.WindowCfg{
 		State:   app,
 		Title:   "Kite",
 		Width:   appDefaultWidth,
 		Height:  appDefaultHeight,
 		OnEvent: appOnEvent,
+		// See icon.go: without IconPNG the macOS backend installs go-gui's
+		// default icon over Kite's at runtime, bundle or no bundle.
+		IconPNG: appIconPNG,
+		// X11 keys the taskbar icon off WM_CLASS matched against a .desktop
+		// file's StartupWMClass. Without this the hicolor icons install but
+		// the window never picks one up. Must match assets/go-kite.desktop.
+		WMClass: "go-kite",
 		OnInit: func(w *gui.Window) {
 			app := gui.State[App](w)
 			session, err := loadSession()
@@ -38,10 +57,7 @@ func main() {
 				w.UpdateView(loginView)
 			}
 		},
-	})
-
-	changeFontSize(-2.25, 4, 30, w)
-	backend.Run(w)
+	}
 }
 
 func processArgs(app *App) {
@@ -56,17 +72,24 @@ func appOnEvent(e *gui.Event, w *gui.Window) {
 	// unhandled events arrive here, but a user at the machine emits a
 	// steady stream of them (mouse moves, key ups); programmatic
 	// scrolls and animation ticks emit none.
-	gui.State[App](w).LastInteraction = time.Now()
+	app := gui.State[App](w)
+	app.LastInteraction = time.Now()
 
 	if e.Type != gui.EventKeyDown || !e.Modifiers.Has(gui.ModAlt) {
 		return
 	}
+
 	switch e.KeyCode {
 	case gui.KeyUp:
 		changeFontSize(0.25, 4, 30, w)
-		e.IsHandled = true
 	case gui.KeyDown:
 		changeFontSize(-0.25, 4, 30, w)
-		e.IsHandled = true
+	case gui.KeyI:
+		// Rendering follows immediately (views.go reads app.ShowImages
+		// each frame); the download pass follows on the next poll —
+		// timelineLoop re-reads the flag every iteration via
+		// readShowImages, so turning images on starts downloading and
+		// turning them off stops it.
+		app.ShowImages = !app.ShowImages
 	}
 }

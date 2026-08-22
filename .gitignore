@@ -21,6 +21,10 @@ main
 Kite.app/
 *.app/
 
+# Release packages (make dist) and the buildapp helper (make all)
+dist/
+build/
+
 # Test binary
 *.test
 

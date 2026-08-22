@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"strings"
 	"time"
 
@@ -26,13 +27,10 @@ var (
 )
 
 func loginView(w *gui.Window) gui.View {
-	ww, wh := w.WindowSize()
 	app := gui.State[App](w)
 
 	return gui.Column(gui.ContainerCfg{
-		Width:   float32(ww),
-		Height:  float32(wh),
-		Sizing:  gui.FixedFixed,
+		Sizing:  gui.FillFill,
 		HAlign:  gui.HAlignCenter,
 		Spacing: gui.Some(float32(gui.PadLarge)),
 		Content: []gui.View{
@@ -110,7 +108,6 @@ func loginAsync(username, password string, w *gui.Window) {
 }
 
 func timelineView(w *gui.Window) gui.View {
-	ww, wh := w.WindowSize()
 	content := timelineContent(w)
 
 	pad := gui.NewPadding(1, gui.PadMedium+gui.PadXSmall, gui.PadSmall, gui.PadSmall)
@@ -119,9 +116,7 @@ func timelineView(w *gui.Window) gui.View {
 		Focusable:  true,
 		Scrollable: true,
 		ScrollMode: gui.ScrollVerticalOnly,
-		Width:      float32(ww),
-		Height:     float32(wh),
-		Sizing:     gui.FixedFixed,
+		Sizing:     gui.FillFill,
 		Padding:    pad,
 		OnAnyClick: func(ctx gui.EventCtx) {
 			if ctx.Event.MouseButton == gui.MouseRight {
@@ -245,21 +240,7 @@ func timelineContent(w *gui.Window) []gui.View {
 		}
 
 		if post.ImagePath != "" && app.ShowImages {
-			width := post.ImageWidth
-			height := post.ImageHeight
-			if width <= 0 {
-				width = imageWidth
-			}
-			if height <= 0 {
-				height = maxImageHeight
-			}
-			if width > imageWidth {
-				height = height * (imageWidth / width)
-				width = imageWidth
-			}
-			if height > maxImageHeight {
-				height = maxImageHeight
-			}
+			width, height := scaledImageDims(post.ImageWidth, post.ImageHeight)
 
 			postContent = append(postContent, gui.Column(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
@@ -291,6 +272,44 @@ func timelineContent(w *gui.Window) []gui.View {
 		}))
 	}
 	return content
+}
+
+// scaledImageDims fits a post embed's intrinsic dimensions to the
+// timeline's display box: wide images scale down proportionally,
+// missing (zero/negative) dims get display defaults, height is capped,
+// and a 1px floor keeps degenerate (absurdly wide) embeds visible
+// instead of vanishing. Defaults apply after scaling so a missing
+// height yields the full display height, not a proportionally shrunk one.
+//
+// NaN is folded to zero up front: every comparison against NaN is
+// false, so without this a NaN dim would sail through all four branches
+// and poison the layout with NaN extents. (The current data path can't
+// produce NaN — imageDimensions decodes from disk — but the function
+// must be safe for any float.)
+func scaledImageDims(width, height float32) (float32, float32) {
+	if math.IsNaN(float64(width)) {
+		width = 0
+	}
+	if math.IsNaN(float64(height)) {
+		height = 0
+	}
+	if width <= 0 {
+		width = imageWidth
+	}
+	if width > imageWidth {
+		height = height * (imageWidth / width)
+		width = imageWidth
+	}
+	if height <= 0 {
+		height = maxImageHeight
+	}
+	if height > maxImageHeight {
+		height = maxImageHeight
+	}
+	if height < 1 {
+		height = 1
+	}
+	return width, height
 }
 
 func isSafeURI(uri string) bool {

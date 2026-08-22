@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Kite
+GenericName=Bluesky Client
+Comment=Desktop Bluesky client
+Exec=go-kite
+Icon=go-kite
+Terminal=false
+Categories=Network;InstantMessaging;
+Keywords=Bluesky;ATProto;Social;Timeline;
+# Must match gui.WindowCfg.WMClass in main.go. X11 taskbars match the window's
+# WM_CLASS against this to pair the running window with this entry's Icon.
+StartupWMClass=go-kite

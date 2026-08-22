@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Simplified mark, bound to the <=64px slots of kite.icns and kite.ico.
+       kite.svg's detail collapses into noise at that size: the neon glow
+       becomes a halo rather than a highlight, the 1px accent polygons and the
+       three tail bows disappear into single grey pixels, and the centre
+       butterfly merges with the crossbar. What survives a 16px render is the
+       silhouette, so this drawing keeps only that: four sails, spine,
+       crossbar, one tail line. Sail opacity goes to 1 and the spars thicken,
+       both to hold contrast once the shape is a handful of pixels.
+       Geometry is kite.svg's, scaled up about the kite's centre so the mark
+       fills the tile - see #mark. -->
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06021f" />
+      <stop offset="50%" stop-color="#0e0f3d" />
+      <stop offset="100%" stop-color="#112454" />
+    </linearGradient>
+
+    <!-- Cyan Electric Gradient -->
+    <linearGradient id="cyan-elec" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3bf6ff" />
+      <stop offset="100%" stop-color="#0051ff" />
+    </linearGradient>
+
+    <!-- White Blue Bright Gradient -->
+    <linearGradient id="white-blue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#7bf0ff" />
+    </linearGradient>
+
+    <!-- Soft Magenta Accent Gradient -->
+    <linearGradient id="magenta-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e200ff" />
+      <stop offset="100%" stop-color="#7100ff" />
+    </linearGradient>
+  </defs>
+
+  <!-- Full-bleed background squircle, same 512/448 scale as kite.svg. -->
+  <g transform="translate(256,256) scale(1.142857) translate(-256,-256)">
+    <rect x="32" y="32" width="448" height="448" rx="100" ry="100" fill="url(#bg-grad2)" stroke="#1a1c4b" stroke-width="2.5" />
+  </g>
+
+  <!-- #mark: the one transform that sizes and places the whole kite. The
+       scale and anchor are fitted to the rendered alpha bbox (72% fill, equal
+       margins all round), not chosen by eye - see README.md "Fitting the mark". -->
+  <g id="mark" transform="translate(249.5,256.5) scale(1.22) translate(-256,-235)">
+    <g transform="translate(256, 210) rotate(18) translate(-256, -210)">
+
+      <!-- Diamond sails, opaque for contrast at small sizes -->
+      <polygon points="256,90 166,175 256,175" fill="url(#cyan-elec)" />
+      <polygon points="256,90 346,175 256,175" fill="url(#white-blue)" />
+      <polygon points="166,175 256,310 256,175" fill="url(#magenta-grad)" />
+      <polygon points="346,175 256,310 256,175" fill="url(#cyan-elec)" />
+
+      <!-- Spars, thickened: 4.5/4 in kite.svg -->
+      <line x1="256" y1="80" x2="256" y2="320" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" />
+      <path d="M 156,175 Q 256,165 356,175" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+
+      <!-- Tail: kite.svg's tail cubic split at t=0.72 (de Casteljau), so this
+           is the exact same arc, not a redrawn approximation of it. The full
+           length would run off the tile once #mark is applied, and its lower
+           third renders as a sub-pixel line at 16px regardless. -->
+      <path d="M 256.00,318.00 C 248.08,348.24 230.31,374.85 219.11,404.18" fill="none" stroke="url(#magenta-grad)" stroke-width="5" stroke-linecap="round" />
+    </g>
+  </g>
+</svg>

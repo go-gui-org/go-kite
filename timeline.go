@@ -39,13 +39,33 @@ func (app *App) startTimelineLoop(w *gui.Window) {
 	app.LoopCancel = make(chan struct{})
 	cancel := app.LoopCancel
 	session := app.Session
-	showImages := app.ShowImages
 
 	w.UpdateView(timelineView)
-	go timelineLoop(w, cancel, session, showImages)
+	go timelineLoop(w, cancel, session)
 }
 
-func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession, showImages bool) {
+// readShowImages reads app.ShowImages from the window's command queue —
+// the only sanctioned path from a goroutine to app state (CLAUDE.md
+// threading model). The timeline loop consults it once per iteration
+// rather than capturing the value at start, so the Alt+I toggle in
+// appOnEvent takes effect on the next poll: turning images on starts the
+// download pass, turning them off stops it. ok=false means the loop was
+// cancelled while waiting — a stalled queue must not hold the loop
+// hostage.
+func readShowImages(w *gui.Window, cancel <-chan struct{}) (show bool, ok bool) {
+	ch := make(chan bool, 1)
+	w.QueueCommand(func(w *gui.Window) {
+		ch <- gui.State[App](w).ShowImages
+	})
+	select {
+	case show := <-ch:
+		return show, true
+	case <-cancel:
+		return false, false
+	}
+}
+
+func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 	fallbackCounter := 0
 
 	for {
@@ -53,6 +73,11 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession, sh
 		case <-cancel:
 			return
 		default:
+		}
+
+		showImages, ok := readShowImages(w, cancel)
+		if !ok {
+			return
 		}
 
 		blueskyTimeline, err := getTimeline(session)
