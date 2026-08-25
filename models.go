@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"github.com/go-gui-org/go-gui/gui"
+)
 
 type App struct {
 	UserName     string
@@ -16,6 +20,15 @@ type App struct {
 	// (any input event reaching appOnEvent). Zero (startup) reads as
 	// long-idle, so the first prepend reveals.
 	LastInteraction time.Time
+
+	// CurrentView is the view generator installed while the help view
+	// is not showing; toggleHelp restores it when help closes. Every
+	// UpdateView call site outside the help toggle must set it first.
+	// ShowHelp marks the help view as installed — the toggle reads it
+	// to choose between opening and closing, since func values cannot
+	// be compared for identity.
+	CurrentView func(*gui.Window) gui.View
+	ShowHelp    bool
 }
 
 type Timeline struct {

@@ -16,14 +16,7 @@ const (
 func main() {
 	app := &App{ShowImages: true}
 	processArgs(app)
-
 	w := gui.NewWindow(kiteWindowCfg(app))
-	// Startup font tuning (see textutil.go): pins the window's theme to a
-	// smaller text size so the 300px-wide timeline fits more content.
-	// Cannot live in kiteWindowCfg — it needs the window handle, which
-	// only exists after NewWindow. Without it the app opens at the
-	// theme's default size and only changes once the user presses Alt+↑.
-	changeFontSize(-2.25, 4, 30, w)
 	backend.Run(w)
 }
 
@@ -54,6 +47,7 @@ func kiteWindowCfg(app *App) gui.WindowCfg {
 				app.Session = session
 				app.startTimelineLoop(w)
 			} else {
+				app.CurrentView = loginView
 				w.UpdateView(loginView)
 			}
 		},
@@ -75,7 +69,25 @@ func appOnEvent(e *gui.Event, w *gui.Window) {
 	app := gui.State[App](w)
 	app.LastInteraction = time.Now()
 
-	if e.Type != gui.EventKeyDown || !e.Modifiers.Has(gui.ModAlt) {
+	if e.Type != gui.EventKeyDown {
+		return
+	}
+
+	// Help toggles on Cmd+/ (macOS) or Super+/ (Linux); Windows uses
+	// F1, since the Super key belongs to the OS there.
+	if helpShortcutPressed(e) {
+		toggleHelp(w)
+		return
+	}
+
+	// Settings opens in the platform's editor on Cmd+, (macOS) or
+	// Ctrl+, (Windows and Linux) — the standard preferences shortcut.
+	if settingsShortcutPressed(e) {
+		openSettingsFile()
+		return
+	}
+
+	if !e.Modifiers.Has(gui.ModAlt) {
 		return
 	}
 
