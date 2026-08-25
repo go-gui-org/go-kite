@@ -1,8 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with
-code in this repository.
-
 ## What this is
 
 Desktop Bluesky client. Single `main` package at the repo root, built on
@@ -16,34 +13,30 @@ make prepush          # full local gate: test-race, vet, lint, build. Run before
 make test             # go test ./...
 make test-race        # go test -race -count=1 ./...
 make vet lint build   # individual gate targets
-make all              # build Kite.app bundle (buildapp built from go.mod's pin)
+make all              # build Kite.app bundle
 go run .              # run the app
 go run . -no-images   # run without image download/rendering
 ```
 
-Single test: `GOWORK=off go test -run TestScaledImageDims ./...` — mirror the
-gate's `GOWORK=off` so the test resolves `go.mod` versions, not sibling
-checkouts.
+Single test: `GOWORK=off go test -run TestScaledImageDims ./...`.
 
-macOS app bundle signing: `make SIGN_IDENTITY="My Dev Cert"`. Ad-hoc signing
-makes TCC key permission grants to the cdhash, which changes every build and
-silently revokes granted permissions. See the Makefile comment.
+macOS bundle signing: `make SIGN_IDENTITY="My Dev Cert"`. Ad-hoc signing grants
+TCC permissions to the cdhash, which changes every build and silently revokes
+them. See the Makefile comment.
 
 ### GOWORK=off is deliberate
 
-All gate targets (`test`, `test-race`, `vet`, `lint`, `build`) force
-`GOWORK=off`. CI never sees a workspace file, so a gate that honored `go.work`
-would validate code CI never builds. The app build targets (`$(KITE_BIN)`,
-`make all`) intentionally keep a bare `go` so local development against sibling
-`../go-glyph` and `../go-gui` checkouts still works.
+Gate targets force `GOWORK=off` — CI never sees a workspace file, so honoring
+`go.work` would validate code CI never builds. App build targets keep a bare
+`go` so local development against sibling `../go-glyph` and `../go-gui`
+checkouts still works.
 
-`go.work` is gitignored; the checked-in `go.work` at the root is a template —
-comments must use `//`, the parser rejects `#`.
+`go.work` is gitignored; the checked-in copy is a template — comments must use
+`//`, the parser rejects `#`.
 
-`make prepush` covers only the host OS. CI runs the suite on both
-`ubuntu-latest` and `macos-latest`, so platform-specific failures on the other
-OS surface only in CI. No `.golangci.yml` exists — both CI and `make lint` run
-golangci-lint defaults, unpinned, so they stay in agreement.
+`make prepush` covers only the host OS. CI runs on `ubuntu-latest` and
+`macos-latest`. No `.golangci.yml` — CI and `make lint` run golangci-lint
+defaults, unpinned, so they stay in agreement.
 
 ## Architecture
 
@@ -66,10 +59,10 @@ channel per `startTimelineLoop`). Each iteration:
 1. `getTimeline` → on error, up to `maxRetryAttempts` (10) session refreshes
    with quadratic backoff (`n²` seconds); after exhaustion it clears state and
    drops back to `loginView`.
-2. Convert + push the text-only timeline immediately (fast first paint).
-3. If images are on, download/resize them in parallel, re-convert, push again —
-   `fromBlueskyTimeline` is called twice on the same raw response because
-   `postImage` only reports images already on disk.
+2. Push text-only timeline immediately (fast first paint).
+3. If images are on, download/resize them in parallel and push again —
+   `fromBlueskyTimeline` runs twice on the same response because `postImage`
+   only reports images already on disk.
 4. Sleep one minute (cancellable).
 
 ### Scroll anchoring
@@ -77,8 +70,8 @@ channel per `startTimelineLoop`). Each iteration:
 `anchorTimelineReveal` runs _before_ `app.Timeline` is replaced — it captures
 the old top post's on-screen position. If the reader is at the top, or idle for
 `idleRevealAfter` (10 min, tracked by `app.LastInteraction` in `appOnEvent`),
-new posts ease into view (`ScrollAnchorReveal`); otherwise the reading position
-is pinned (`ScrollAnchor`). `postViewID` = post URI + NUL + reposter, because a
+new posts ease in (`ScrollAnchorReveal`); otherwise the reading position is
+pinned (`ScrollAnchor`). `postViewID` = post URI + NUL + reposter, because a
 timeline can hold both a post and reposts of it.
 
 `postIsRendered` in `views.go` and the anchor helpers must agree on which posts

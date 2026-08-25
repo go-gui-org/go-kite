@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"runtime"
 	"strings"
 	"time"
 
@@ -14,6 +15,10 @@ const (
 	timelineContentID = "timeline-content"
 	lineThickness     = 0.5
 	maxTimelinePosts  = 25
+
+	// helpScrollID is the help view's scroll container. Right-click
+	// jumps it back to the top, like the timeline's.
+	helpScrollID = "help-scroll"
 
 	// idleRevealAfter: with no user interaction for this long, a
 	// prepend reveals new posts (scrolls to top) even from a held
@@ -315,6 +320,161 @@ func scaledImageDims(width, height float32) (float32, float32) {
 func isSafeURI(uri string) bool {
 	lower := strings.ToLower(uri)
 	return strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://")
+}
+
+// helpItem is one row of the help view: a shortcut (or mouse action)
+// and a plain-language description of what it does. View-internal
+// only — models.go is reserved for atproto lexicon mirrors.
+type helpItem struct {
+	key   string
+	label string
+}
+
+// helpShortcutLabel and settingsShortcutLabel print the shortcuts the
+// help view lists. They mirror helpShortcutFor and
+// settingsShortcutFor — change a matcher and change its label with
+// it, or the help view teaches a key that does nothing. The goos
+// parameter keeps both testable on any host.
+func helpShortcutLabel(goos string) string {
+	switch goos {
+	case "windows":
+		return "F1"
+	case "darwin":
+		return "Cmd+/"
+	default:
+		return "Super+/"
+	}
+}
+
+func settingsShortcutLabel(goos string) string {
+	if goos == "darwin" {
+		return "Cmd+,"
+	}
+	return "Ctrl+,"
+}
+
+// helpShortcutFor reports whether the event is the help shortcut for
+// the given OS. macOS and Linux use Super+/ (Cmd+/); Windows uses
+// plain F1, because the Super key there belongs to the OS (Win+/ is a
+// system shortcut). Modifiers are excluded on both paths so combos
+// that mean something else — Ctrl+/ (find), Alt+/ (menu mnemonic),
+// Alt+F1 — don't get swallowed as a help toggle. The goos parameter
+// keeps the mapping testable on any host.
+func helpShortcutFor(goos string, e *gui.Event) bool {
+	if goos == "windows" {
+		return e.KeyCode == gui.KeyF1 &&
+			!e.Modifiers.HasAny(gui.ModSuper, gui.ModCtrl, gui.ModAlt)
+	}
+	return e.KeyCode == gui.KeySlash &&
+		e.Modifiers.Has(gui.ModSuper) &&
+		!e.Modifiers.HasAny(gui.ModCtrl, gui.ModAlt)
+}
+
+func helpShortcutPressed(e *gui.Event) bool {
+	return helpShortcutFor(runtime.GOOS, e)
+}
+
+// toggleHelp swaps the current view for the help view and back.
+// Opening stores nothing — app.CurrentView already holds the pre-help
+// view. The timeline loop normally only refreshes with UpdateWindow,
+// but its give-up path does install loginView over the help view; it
+// clears ShowHelp when it does, so the next toggle opens rather than
+// closing an already-gone help view. Closing restores CurrentView,
+// falling back to loginView if nothing was recorded.
+func toggleHelp(w *gui.Window) {
+	app := gui.State[App](w)
+	if app.ShowHelp {
+		app.ShowHelp = false
+		restore := app.CurrentView
+		if restore == nil {
+			restore = loginView
+		}
+		w.UpdateView(restore)
+		return
+	}
+	app.ShowHelp = true
+	w.UpdateView(helpView)
+}
+
+// helpView lists the app's shortcuts and mouse gestures. The window
+// is only ~300px wide, so every description is wrapped text and no
+// row carries a fixed width; the whole view scrolls, and right-click
+// jumps back to the top just like the timeline.
+func helpView(w *gui.Window) gui.View {
+	theme := gui.CurrentTheme()
+
+	helpKey := helpShortcutLabel(runtime.GOOS)
+	settingsKey := settingsShortcutLabel(runtime.GOOS)
+
+	content := []gui.View{
+		gui.Text(gui.TextCfg{Text: "Help", TextStyle: theme.B1}),
+		gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
+		helpSection(theme, "Keyboard", []helpItem{
+			{key: helpKey, label: "Open or close this help view"},
+			{key: settingsKey, label: "Open the settings file in an editor"},
+			{key: "Alt+Up", label: "Increase font size"},
+			{key: "Alt+Down", label: "Decrease font size"},
+			{key: "Alt+I", label: "Toggle image loading"},
+		}),
+		gui.Rectangle(gui.RectangleCfg{Height: gui.PadMedium}),
+		helpSection(theme, "Mouse", []helpItem{
+			{key: "Right-click", label: "Scroll back to the top of the timeline"},
+			{key: "Left-click", label: "Open links in your browser"},
+		}),
+	}
+
+	return gui.Column(gui.ContainerCfg{
+		ID:         helpScrollID,
+		Focusable:  true,
+		Scrollable: true,
+		ScrollMode: gui.ScrollVerticalOnly,
+		Sizing:     gui.FillFill,
+		Padding:    gui.NewPadding(gui.PadSmall, gui.PadMedium, gui.PadSmall, gui.PadMedium),
+		OnAnyClick: func(ctx gui.EventCtx) {
+			if ctx.Event.MouseButton == gui.MouseRight {
+				ctx.Window.ScrollVerticalTo(helpScrollID, 0)
+				ctx.Consume()
+			}
+		},
+		Content: []gui.View{
+			gui.Column(gui.ContainerCfg{
+				Padding: gui.PaddingNone,
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(2),
+				Content: content,
+			}),
+		},
+	})
+}
+
+// helpSection renders one titled block of shortcut rows: a divider
+// under the title, then key/description pairs. Keys are bold,
+// descriptions muted and wrapped, so rows reflow inside a 300px-wide
+// window instead of spilling off the right edge. Spacers between
+// blocks keep the pairs visually grouped.
+func helpSection(theme gui.Theme, title string, items []helpItem) gui.View {
+	keyStyle := theme.B3
+	descStyle := theme.N3
+	descStyle.Color = postTextColor
+
+	children := make([]gui.View, 0, 1+len(items)*3)
+	children = append(children,
+		gui.Text(gui.TextCfg{Text: title, TextStyle: theme.B3}),
+		gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
+	)
+	for _, item := range items {
+		children = append(children,
+			gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
+			gui.Text(gui.TextCfg{Text: item.key, TextStyle: keyStyle}),
+			gui.Text(gui.TextCfg{Text: item.label, TextStyle: descStyle, Mode: gui.TextModeWrap}),
+		)
+	}
+	return gui.Column(gui.ContainerCfg{
+		Padding: gui.PaddingNone,
+		Sizing:  gui.FillFit,
+		Spacing: gui.SomeF(1),
+		Content: children,
+	})
 }
 
 func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
