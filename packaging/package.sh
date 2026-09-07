@@ -13,7 +13,8 @@
 # CGo-free on both -- it dlopens libEGL/opengl32 through purego, and go-glyph
 # supplies a pure-Go text pipeline when cgo is off (go-gui
 # docs/specs/cgo-free-backend-feasibility.md). macOS is the exception: its
-# backend is 5.9k lines of ObjC, so a .dmg can only be built on macOS.
+# backend is 5.9k lines of ObjC, so a .dmg can only be built on macOS -- but
+# it is built universal there, covering Apple silicon and Intel in one image.
 set -eu
 
 cd "$(dirname "$0")/.."
@@ -73,8 +74,17 @@ linuxbin() {
 # glibc link means one binary runs on every distro.
 gobuild() {
 	echo "  build $1/$2"
+	ldflags="-s -w"
+	# -H windowsgui marks the PE as a GUI-subsystem image. Without it the
+	# Windows loader hands the process a console, so launching Kite puts an
+	# empty terminal window behind it. Nothing here needs a console: the
+	# binary writes no output a user is meant to read, and the syso already
+	# supplies the icon.
+	if [ "$1" = windows ]; then
+		ldflags="$ldflags -H windowsgui"
+	fi
 	CGO_ENABLED=0 GOOS="$1" GOARCH="$2" \
-		go build -tags=prod -trimpath -ldflags="-s -w" -o "$3" .
+		go build -tags=prod -trimpath -ldflags="$ldflags" -o "$3" .
 }
 
 # tarball OUT CDIR MEMBER -- tar.gz of MEMBER relative to CDIR, owned by
@@ -120,8 +130,16 @@ package_macos() {
 		exit 1
 	}
 
-	arch=$(uname -m)
-	case "$arch" in x86_64) arch=amd64 ;; esac
+	# `make dist-macos` bundles a universal binary; `make all && ...
+	# packaging/package.sh macos` by hand bundles a host-native one. Name
+	# the image for what the bundle actually holds rather than assuming.
+	if [ "$(lipo -archs "$APP.app/Contents/MacOS/$BIN" 2>/dev/null |
+		wc -w)" -gt 1 ]; then
+		arch=universal
+	else
+		arch=$(uname -m)
+		case "$arch" in x86_64) arch=amd64 ;; esac
+	fi
 	out="$DIST/$APP-$VERSION-macos-$arch.dmg"
 
 	stage="$DIST/dmg-stage"

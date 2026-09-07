@@ -1,5 +1,5 @@
 .PHONY: all clean icons dist dist-macos dist-linux dist-windows \
-	test test-race vet lint build prepush
+	test test-race vet lint build prepush universal
 
 KITE_BIN     := go-kite
 APP_NAME     := Kite
@@ -62,8 +62,13 @@ $(BUILDAPP_BIN):
 
 # Depends on the icon so swapping artwork forces a re-bundle; Go source
 # changes are caught by go build itself, not by make's timestamp check.
+# No -bundle-deps: Kite links nothing outside /System and /usr/lib, so
+# there is nothing to copy into Contents/Frameworks. The flag is not
+# merely redundant — buildapp's dependency rewriter fails outright on the
+# universal binary `make dist-macos` produces (install_name_tool -id
+# against a fat Mach-O exits 1), which failed the whole dist run.
 $(APP_NAME).app: $(KITE_BIN) $(BUILDAPP_BIN) $(APP_ICON)
-	$(BUILDAPP_BIN) -bundle-deps -o . -name $(APP_NAME) \
+	$(BUILDAPP_BIN) -o . -name $(APP_NAME) \
 		-id github.com.go-gui-org.go-kite -icon $(APP_ICON) \
 		$(SIGN_FLAG) $(KITE_BIN)
 
@@ -88,8 +93,35 @@ icons:
 # because it is a sequence of steps rather than a dependency graph.
 dist-macos dist-linux dist-windows: GO_APP := GOWORK=off go
 
-# Depends on the bundle, so the .dmg can never ship a stale Kite.app.
-dist-macos: $(APP_NAME).app
+# Universal binary, so one .dmg serves Apple silicon and Intel. Each half
+# needs its own cgo -arch flags; lipo then fuses them into $(KITE_BIN),
+# which is what the bundle rule picks up.
+#
+# Not folded into the $(KITE_BIN) rule: `make all` is the inner-loop
+# target and building both halves would double every local rebuild for an
+# architecture the developer is not running.
+universal:
+	mkdir -p build
+	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
+	  CGO_CFLAGS="-arch arm64" \
+	  CGO_LDFLAGS="-arch arm64 -Wl,-no_warn_duplicate_libraries" \
+	  $(GO_APP) build -tags=prod -trimpath -ldflags="-s -w" \
+	  -o build/$(KITE_BIN)-darwin-arm64 .
+	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
+	  CGO_CFLAGS="-arch x86_64" \
+	  CGO_LDFLAGS="-arch x86_64 -Wl,-no_warn_duplicate_libraries" \
+	  $(GO_APP) build -tags=prod -trimpath -ldflags="-s -w" \
+	  -o build/$(KITE_BIN)-darwin-amd64 .
+	lipo -create -output $(KITE_BIN) \
+	  build/$(KITE_BIN)-darwin-arm64 build/$(KITE_BIN)-darwin-amd64
+
+# Recursive rather than a prerequisite list: the three steps must run in
+# this order, and plain prerequisites carry no ordering guarantee under
+# `make -j`. universal rewrites $(KITE_BIN), which the bundle rule then
+# consumes, so a parallel build could otherwise bundle the native binary.
+dist-macos:
+	$(MAKE) universal
+	$(MAKE) $(APP_NAME).app
 	./packaging/package.sh macos
 
 dist-linux:
