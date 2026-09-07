@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# Nothing by default. Only the final job needs a write token, to attach
+# the assets, and only it asks for one.
+permissions: {}
+
+# Each job runs the same `make dist-*` target a developer runs locally,
+# so a release can be rehearsed with `make dist` before the tag is
+# pushed. packaging/package.sh holds the logic; these jobs only choose a
+# runner and collect the output.
+#
+# Only macOS needs a matching runner: its backend is ObjC behind cgo.
+# Linux and Windows are cgo-free -- go-gui dlopens libEGL/opengl32
+# through purego and go-glyph's text pipeline is pure Go -- so one ubuntu
+# runner cross-compiles both, for both architectures, with no C toolchain.
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        # package.sh stamps the version from `git describe`, which needs
+        # the tag history a shallow clone leaves out.
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      # Produces a .tar.gz and a .deb per architecture. The .deb is
+      # assembled from ar + two tars, so no dpkg is needed.
+      - name: Package amd64 and arm64
+        run: make dist-linux
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-asset
+          path: |
+            dist/go-kite-*-linux-*.tar.gz
+            dist/go-kite_*.deb
+
+  windows:
+    name: Windows
+    # Cross-compiled from Linux. The build is cgo-free, so the result is
+    # identical to one produced on a windows runner, and a single job
+    # covers both architectures.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      # The .exe carries its icon from rsrc_windows_<arch>.syso and is
+      # linked -H windowsgui, so no console window opens behind Kite.
+      - name: Package amd64 and arm64
+        run: make dist-windows
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: windows-asset
+          path: dist/go-kite-*-windows-*.zip
+
+  macos:
+    name: macOS
+    # A Mac is required: the backend is cgo/ObjC, and the bundle needs
+    # lipo, hdiutil and codesign.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      # Builds arm64 and amd64, fuses them with lipo, bundles the result
+      # as Kite.app and writes a .dmg. One download serves Apple silicon
+      # and Intel.
+      - name: Package universal .dmg
+        run: make dist-macos
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: macos-asset
+          path: dist/Kite-*-macos-*.dmg
+
+  release:
+    name: Attach to GitHub Release
+    needs: [linux, windows, macos]
+    runs-on: ubuntu-latest
+    # Only this job writes. The build jobs above keep the workflow's
+    # empty permission set.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: '*-asset'
+          merge-multiple: true
+          path: dist
+
+      # Each job wrote a SHA256SUMS covering only its own artifacts, and
+      # they are not collected above. Regenerate one over the full set,
+      # matching what `make dist` produces locally.
+      - name: Checksums over every artifact
+        working-directory: dist
+        run: |
+          find . -maxdepth 1 -type f ! -name SHA256SUMS \
+            | sort | xargs sha256sum | sed 's|  \./|  |' > SHA256SUMS
+          cat SHA256SUMS
+
+      # Pinned to a commit rather than the v3 tag: a tag can be moved to
+      # point at different code, a commit cannot.  This commit is release
+      # 3.0.3, which is what refs/tags/v3 dereferenced to when it was
+      # written.  Bump it deliberately, after reading the diff.
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64
+        with:
+          files: dist/*
+          generate_release_notes: true
