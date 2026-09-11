@@ -48,7 +48,7 @@ func kiteWindowCfg(app *App) gui.WindowCfg {
 				app.startTimelineLoop(w)
 			} else {
 				app.CurrentView = loginView
-				w.UpdateView(loginView)
+				w.SetView(loginView)
 			}
 		},
 	}

@@ -23,7 +23,7 @@ type App struct {
 
 	// CurrentView is the view generator installed while the help view
 	// is not showing; toggleHelp restores it when help closes. Every
-	// UpdateView call site outside the help toggle must set it first.
+	// SetView call site outside the help toggle must set it first.
 	// ShowHelp marks the help view as installed — the toggle reads it
 	// to choose between opening and closing, since func values cannot
 	// be compared for identity.

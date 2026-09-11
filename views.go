@@ -95,12 +95,12 @@ func loginAsync(username, password string, w *gui.Window) {
 		app.LoginPending = false
 		if err != nil {
 			app.ErrorMsg = err.Error()
-			w.UpdateWindow()
+			w.InvalidateLayout()
 			return
 		}
 		if saveErr := saveSession(session); saveErr != nil {
 			app.ErrorMsg = saveErr.Error()
-			w.UpdateWindow()
+			w.InvalidateLayout()
 			return
 		}
 		app.UserName = ""
@@ -108,7 +108,7 @@ func loginAsync(username, password string, w *gui.Window) {
 		app.ErrorMsg = ""
 		app.Session = session
 		app.startTimelineLoop(w)
-		w.UpdateWindow()
+		w.InvalidateLayout()
 	})
 }
 
@@ -376,7 +376,7 @@ func helpShortcutPressed(e *gui.Event) bool {
 
 // toggleHelp swaps the current view for the help view and back.
 // Opening stores nothing — app.CurrentView already holds the pre-help
-// view. The timeline loop normally only refreshes with UpdateWindow,
+// view. The timeline loop normally only refreshes with InvalidateLayout,
 // but its give-up path does install loginView over the help view; it
 // clears ShowHelp when it does, so the next toggle opens rather than
 // closing an already-gone help view. Closing restores CurrentView,
@@ -389,11 +389,11 @@ func toggleHelp(w *gui.Window) {
 		if restore == nil {
 			restore = loginView
 		}
-		w.UpdateView(restore)
+		w.SetView(restore)
 		return
 	}
 	app.ShowHelp = true
-	w.UpdateView(helpView)
+	w.SetView(helpView)
 }
 
 // helpView lists the app's shortcuts and mouse gestures. The window
