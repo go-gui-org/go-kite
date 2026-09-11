@@ -44,12 +44,12 @@ defaults, unpinned, so they stay in agreement.
 
 `go-gui` owns the UI thread. Everything touching window or app state from a
 goroutine must go through `w.QueueCommand(func(w *gui.Window){...})`, then call
-`w.UpdateWindow()` inside it. This is the single most load-bearing rule in the
+`w.InvalidateLayout()` inside it. This is the single most load-bearing rule in the
 codebase — `loginAsync` and `timelineLoop` are both built around it.
 
 App state is one `*App` reached via `gui.State[App](w)`. Views are functions
 `func(*gui.Window) gui.View` swapped with
-`w.UpdateView(loginView | timelineView)`.
+`w.SetView(loginView | timelineView)`.
 
 ### Timeline loop (`timeline.go`)
 

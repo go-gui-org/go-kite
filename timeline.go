@@ -43,7 +43,7 @@ func (app *App) startTimelineLoop(w *gui.Window) {
 	// CurrentView must track the installed view so the help toggle can
 	// restore it — see toggleHelp.
 	app.CurrentView = timelineView
-	w.UpdateView(timelineView)
+	w.SetView(timelineView)
 	go timelineLoop(w, cancel, session)
 }
 
@@ -92,7 +92,7 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 					session = refreshed
 					w.QueueCommand(func(w *gui.Window) {
 						gui.State[App](w).Session = refreshed
-						w.UpdateWindow()
+						w.InvalidateLayout()
 					})
 				}
 				sleepOrCancel(cancel, time.Duration(fallbackCounter*fallbackCounter)*time.Second)
@@ -110,8 +110,8 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 				// not think help is still installed.
 				app.CurrentView = loginView
 				app.ShowHelp = false
-				w.UpdateView(loginView)
-				w.UpdateWindow()
+				w.SetView(loginView)
+				w.InvalidateLayout()
 			})
 			return
 		}
@@ -124,7 +124,7 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 			anchorTimelineReveal(app, timeline, w)
 			app.Timeline = timeline
 			app.ErrorMsg = ""
-			w.UpdateWindow()
+			w.InvalidateLayout()
 		})
 
 		if showImages {
@@ -132,7 +132,7 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 			timelineWithImages := fromBlueskyTimeline(blueskyTimeline, maxTimelinePosts)
 			w.QueueCommand(func(w *gui.Window) {
 				gui.State[App](w).Timeline = timelineWithImages
-				w.UpdateWindow()
+				w.InvalidateLayout()
 			})
 		}
 
