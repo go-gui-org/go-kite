@@ -39,7 +39,7 @@ func loginView(w *gui.Window) gui.View {
 		HAlign:  gui.HAlignCenter,
 		Spacing: gui.Some(float32(gui.PadLarge)),
 		Content: []gui.View{
-			gui.Text(gui.TextCfg{Text: "Login", TextStyle: gui.CurrentTheme().B1}),
+			gui.Text(gui.TextCfg{Text: "Login", TextStyle: gui.CurrentTheme().TextStyleDisplay}),
 			gui.Input(gui.InputCfg{
 				ID:          "login-username",
 				Text:        app.UserName,
@@ -81,7 +81,7 @@ func loginView(w *gui.Window) gui.View {
 			}),
 			gui.Text(gui.TextCfg{
 				Text:      app.ErrorMsg,
-				TextStyle: gui.CurrentTheme().B3,
+				TextStyle: gui.CurrentTheme().TextStyleTitleSmall,
 				Mode:      gui.TextModeWrap,
 			}),
 		},
@@ -182,7 +182,7 @@ func timelineContent(w *gui.Window) []gui.View {
 		return content
 	}
 
-	baseTextStyle := gui.CurrentTheme().N3
+	baseTextStyle := gui.CurrentTheme().TextStyleBody
 	postTextStyle := baseTextStyle
 	postTextStyle.Color = postTextColor
 	postLinkStyle := baseTextStyle
@@ -407,7 +407,7 @@ func helpView(w *gui.Window) gui.View {
 	settingsKey := settingsShortcutLabel(runtime.GOOS)
 
 	content := []gui.View{
-		gui.Text(gui.TextCfg{Text: "Help", TextStyle: theme.B1}),
+		gui.Text(gui.TextCfg{Text: "Help", TextStyle: theme.TextStyleDisplay}),
 		gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
 		helpSection(theme, "Keyboard", []helpItem{
 			{key: helpKey, label: "Open or close this help view"},
@@ -453,13 +453,13 @@ func helpView(w *gui.Window) gui.View {
 // window instead of spilling off the right edge. Spacers between
 // blocks keep the pairs visually grouped.
 func helpSection(theme gui.Theme, title string, items []helpItem) gui.View {
-	keyStyle := theme.B3
-	descStyle := theme.N3
+	keyStyle := theme.TextStyleTitleSmall
+	descStyle := theme.TextStyleBody
 	descStyle.Color = postTextColor
 
 	children := make([]gui.View, 0, 1+len(items)*3)
 	children = append(children,
-		gui.Text(gui.TextCfg{Text: title, TextStyle: theme.B3}),
+		gui.Text(gui.TextCfg{Text: title, TextStyle: theme.TextStyleTitleSmall}),
 		gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
 	)
 	for _, item := range items {
