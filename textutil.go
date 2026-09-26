@@ -71,7 +71,7 @@ func logError(msg string) {
 }
 
 func changeFontSize(delta, minSize, maxSize float32, w *gui.Window) {
-	t, err := gui.CurrentTheme().AdjustFontSize(delta, minSize, maxSize)
+	t, err := w.Theme().AdjustFontSize(delta, minSize, maxSize)
 	if err != nil {
 		logError(err.Error())
 		return
