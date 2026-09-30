@@ -37,7 +37,7 @@ func loginView(w *gui.Window) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFill,
 		HAlign:  gui.HAlignCenter,
-		Spacing: gui.Some(float32(gui.PadLarge)),
+		Spacing: gui.SpacingLarge,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Login", TextStyle: gui.CurrentTheme().TextStyleDisplay}),
 			gui.Input(gui.InputCfg{
@@ -134,7 +134,7 @@ func timelineView(w *gui.Window) gui.View {
 				ID:      timelineContentID,
 				Padding: gui.PaddingNone,
 				Sizing:  gui.FillFit,
-				Spacing: gui.SomeF(3),
+				Spacing: gui.SpacingTight,
 				Content: content,
 			}),
 		},
@@ -216,8 +216,8 @@ func timelineContent(w *gui.Window) []gui.View {
 			postContent = append(postContent, gui.Row(gui.ContainerCfg{
 				Padding:    gui.NewPadding(gui.PadMedium, gui.PadSmall, gui.PadMedium, 1),
 				Sizing:     gui.FillFit,
-				Spacing:    gui.SomeF(7.5),
-				SizeBorder: gui.Some(float32(0)),
+				Spacing:    gui.SpacingSmall,
+				SizeBorder: gui.NoBorder,
 				Content: []gui.View{
 					gui.Rectangle(gui.RectangleCfg{
 						Width:  lineThickness,
@@ -227,7 +227,7 @@ func timelineContent(w *gui.Window) []gui.View {
 					gui.Column(gui.ContainerCfg{
 						Padding: gui.NewPadding(0, gui.PadSmall+gui.PadXSmall, 0, 0),
 						Sizing:  gui.FillFit,
-						Spacing: gui.Some(float32(0)),
+						Spacing: gui.NoSpacing,
 						Content: []gui.View{
 							textLink(post.FormattedQuoteTimeAuth, post.QuotePostLinkURI, baseTextStyle),
 							gui.Rectangle(gui.RectangleCfg{Height: gui.PadXSmall - 1}),
@@ -272,7 +272,7 @@ func timelineContent(w *gui.Window) []gui.View {
 			ID:      postViewID(post),
 			Padding: gui.PaddingNone,
 			Sizing:  gui.FillFit,
-			Spacing: gui.SomeF(1),
+			Spacing: gui.SpacingTight,
 			Content: postContent,
 		}))
 	}
@@ -440,7 +440,7 @@ func helpView(w *gui.Window) gui.View {
 			gui.Column(gui.ContainerCfg{
 				Padding: gui.PaddingNone,
 				Sizing:  gui.FillFit,
-				Spacing: gui.SomeF(2),
+				Spacing: gui.SpacingTight,
 				Content: content,
 			}),
 		},
@@ -472,7 +472,7 @@ func helpSection(theme gui.Theme, title string, items []helpItem) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Padding: gui.PaddingNone,
 		Sizing:  gui.FillFit,
-		Spacing: gui.SomeF(1),
+		Spacing: gui.SpacingTight,
 		Content: children,
 	})
 }
@@ -480,7 +480,7 @@ func helpSection(theme gui.Theme, title string, items []helpItem) gui.View {
 func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Padding:    gui.PaddingNone,
-		SizeBorder: gui.Some(float32(0)),
+		SizeBorder: gui.NoBorder,
 		Sizing:     gui.FillFit,
 		OnClick: func(ctx gui.EventCtx) {
 			ctx.Consume()
