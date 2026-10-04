@@ -1,5 +1,5 @@
 .PHONY: all clean icons dist dist-macos dist-linux dist-windows \
-	test test-race vet lint build prepush universal
+	test test-race vet lint lint-bin build prepush universal
 
 KITE_BIN     := go-kite
 APP_NAME     := Kite
@@ -37,11 +37,17 @@ GO := GOWORK=off go
 # go.sum records rather than from whatever is checked out next door.
 GO_APP := go
 
+# Repo-local bin for the pinned linter. The pinned VERSION itself lives in
+# tools/lint/go.mod -- see the $(LINT_BIN) rule below. `make lint` and CI
+# both build from that file, so a local pass and a CI pass run one version.
+LINT_DIR = $(CURDIR)/.bin
+LINT_BIN = $(LINT_DIR)/golangci-lint
+
 # golangci-lint is its own binary, so $(GO) does not cover it — but it
 # honours go.work the same way the toolchain does. Without GOWORK=off it
 # would type-check against sibling working copies and report breakage that
 # CI, which builds the pinned versions, will never see.
-LINT := GOWORK=off golangci-lint
+LINT := GOWORK=off $(LINT_BIN)
 
 all: $(APP_NAME).app
 
@@ -146,10 +152,21 @@ test-race:
 vet:
 	$(GO) vet ./...
 
-# Lint. CI uses golangci-lint-action without a pinned version and this repo
-# carries no .golangci.yml, so both CI and this target run the golangci-lint
-# defaults. Keep it unpinned so the two stay in agreement.
-lint:
+# Build the pinned golangci-lint into .bin/. It rebuilds only when
+# tools/lint/go.mod or go.sum change. GOWORK=off keeps a local go.work out
+# of the build. GOOS/GOARCH/CGO_ENABLED are cleared so a caller that sets
+# them to pick a lint target does not cross-compile the linter itself into
+# a binary this host cannot run.
+$(LINT_BIN): tools/lint/go.mod tools/lint/go.sum
+	GOWORK=off GOOS= GOARCH= CGO_ENABLED=0 GOFLAGS= GOBIN=$(LINT_DIR) \
+	  go -C tools/lint install \
+	  github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+
+lint-bin: $(LINT_BIN)
+
+# Lint. This repo carries no .golangci.yml, so this runs the golangci-lint
+# defaults at the version pinned in tools/lint. CI runs this same target.
+lint: $(LINT_BIN)
 	$(LINT) run ./...
 
 build:
