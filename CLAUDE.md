@@ -36,7 +36,7 @@ checkouts still works.
 
 `make prepush` covers only the host OS. CI runs on `ubuntu-latest` and
 `macos-latest`. No `.golangci.yml` — CI and `make lint` run golangci-lint
-defaults, unpinned, so they stay in agreement.
+defaults, at the version pinned in `tools/lint/go.mod`.
 
 ## Architecture
 

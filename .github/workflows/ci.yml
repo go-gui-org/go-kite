@@ -54,8 +54,8 @@ jobs:
         working-directory: go-kite
         run: go vet ./...
 
+      # Builds the linter pinned in tools/lint/go.mod, the same binary
+      # `make lint` runs locally.
       - name: Lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          working-directory: go-kite
-          args: ./...
+        working-directory: go-kite
+        run: make lint
