@@ -74,7 +74,9 @@ linuxbin() {
 # glibc link means one binary runs on every distro.
 gobuild() {
 	echo "  build $1/$2"
-	ldflags="-s -w"
+	# -X main.version stamps the release VERSION into the help view's
+	# about section, so the binary names the same version as its package.
+	ldflags="-s -w -X main.version=$VERSION"
 	# -H windowsgui marks the PE as a GUI-subsystem image. Without it the
 	# Windows loader hands the process a console, so launching Kite puts an
 	# empty terminal window behind it. Nothing here needs a console: the
