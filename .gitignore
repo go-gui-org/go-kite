@@ -48,6 +48,7 @@ vendor/
 *.swo
 *~
 .claude/
+.codegraph/
 
 # OS
 .DS_Store
