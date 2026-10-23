@@ -102,7 +102,17 @@ Two validators exist for a reason — keep them:
 ### Session
 
 `~/.kite.toml` (TOML, path intentionally compatible with the original V app).
-`refreshSession` rewrites the file on every successful token refresh.
+`timelineLoop` rewrites the file on every successful token refresh — on the UI
+thread, and only while `app.LoopCancel` is still its own cancel channel.
+`refreshSession` itself never saves: a save from the loop goroutine could land
+after `logout` cleared the tokens and silently log the user back in. Every
+queued timeline-loop command checks `app.LoopCancel != cancel` for the same
+reason.
+
+`logout` (help view's Log out button) cancels the loop, rewrites the file with
+handle/email only (`clearSessionTokens` — the file doubles as the settings file,
+so it is not deleted), and revokes the session server-side (`deleteSession`,
+best-effort).
 
 ## Conventions
 

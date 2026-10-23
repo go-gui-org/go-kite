@@ -91,7 +91,19 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 				if refreshErr == nil {
 					session = refreshed
 					w.QueueCommand(func(w *gui.Window) {
-						gui.State[App](w).Session = refreshed
+						app := gui.State[App](w)
+						// logout and startTimelineLoop replace
+						// LoopCancel on the UI thread, so this check
+						// and the save cannot interleave with them. A
+						// stale loop must not write tokens back after
+						// logout cleared them.
+						if app.LoopCancel != cancel {
+							return
+						}
+						app.Session = refreshed
+						if err := saveSession(refreshed); err != nil {
+							logError("save refreshed session: " + err.Error())
+						}
 						w.InvalidateLayout()
 					})
 				}
@@ -101,6 +113,9 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 
 			w.QueueCommand(func(w *gui.Window) {
 				app := gui.State[App](w)
+				if app.LoopCancel != cancel {
+					return
+				}
 				app.Timeline = Timeline{}
 				app.ErrorMsg = err.Error()
 				app.Password = ""
@@ -121,6 +136,11 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 		timeline := fromBlueskyTimeline(blueskyTimeline, maxTimelinePosts)
 		w.QueueCommand(func(w *gui.Window) {
 			app := gui.State[App](w)
+			// A fetch in flight when logout ran must not refill the
+			// timeline a logged-out user should no longer hold.
+			if app.LoopCancel != cancel {
+				return
+			}
 			anchorTimelineReveal(app, timeline, w)
 			app.Timeline = timeline
 			app.ErrorMsg = ""
@@ -131,7 +151,11 @@ func timelineLoop(w *gui.Window, cancel <-chan struct{}, session BSkySession) {
 			getTimelineImages(blueskyTimeline)
 			timelineWithImages := fromBlueskyTimeline(blueskyTimeline, maxTimelinePosts)
 			w.QueueCommand(func(w *gui.Window) {
-				gui.State[App](w).Timeline = timelineWithImages
+				app := gui.State[App](w)
+				if app.LoopCancel != cancel {
+					return
+				}
+				app.Timeline = timelineWithImages
 				w.InvalidateLayout()
 			})
 		}

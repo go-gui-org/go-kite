@@ -80,3 +80,41 @@ func TestGetTimelineSendsAuth(t *testing.T) {
 		t.Fatalf("getTimeline error: %v", err)
 	}
 }
+
+// Logout revokes the session on the server. atproto's deleteSession
+// authenticates with the refresh token, not the access token — sending
+// the access token would leave the long-lived refresh token valid.
+func TestDeleteSessionSendsRefreshToken(t *testing.T) {
+	status := http.StatusOK
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/xrpc/com.atproto.server.deleteSession" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer refresh" {
+			t.Fatalf("unexpected auth header: %q", got)
+		}
+		w.WriteHeader(status)
+	}))
+	defer server.Close()
+
+	oldClient := httpClient
+	defer func() { httpClient = oldClient }()
+	baseURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("parse server URL: %v", err)
+	}
+	httpClient = &http.Client{Transport: rewriteTransport{base: baseURL, rt: http.DefaultTransport}}
+
+	session := BSkySession{AccessJWT: "access", RefreshJWT: "refresh"}
+	if err := deleteSession(session); err != nil {
+		t.Fatalf("deleteSession error: %v", err)
+	}
+
+	status = http.StatusUnauthorized
+	if err := deleteSession(session); err == nil {
+		t.Fatal("deleteSession: want error on 401, got nil")
+	}
+}

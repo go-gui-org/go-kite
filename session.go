@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -117,6 +116,63 @@ func openSettingsFile() {
 	go func() { _ = cmd.Wait() }()
 }
 
+// clearSessionTokens rewrites the session file with only the handle
+// and email. It rewrites rather than deletes: the same file is the
+// settings file openSettingsFile opens, and the handle pre-fills the
+// login view. Empty tokens fail isValidSession, so the next start
+// shows the login view.
+func clearSessionTokens(session BSkySession) error {
+	return saveSession(BSkySession{Handle: session.Handle, Email: session.Email})
+}
+
+// logout ends the session and returns to the login view. It runs on
+// the UI thread (the help view's Log out button), so it changes app
+// state directly.
+//
+// Order matters: the timeline loop is cancelled first, so it cannot
+// refresh the tokens and write them back to disk after they are
+// cleared. The server revoke runs in a goroutine because it is network
+// I/O. It is best-effort: a failure is logged, and the local logout
+// stands either way, since the user asked to be logged out of this
+// app. The goroutine touches no app state, so it needs no QueueCommand.
+func logout(w *gui.Window) {
+	app := gui.State[App](w)
+	if app.LoopCancel != nil {
+		close(app.LoopCancel)
+		app.LoopCancel = nil
+	}
+
+	old := app.Session
+	app.Session = BSkySession{}
+	app.Timeline = Timeline{}
+	app.Password = ""
+	app.ErrorMsg = ""
+	app.LoginPending = false
+	app.UserName = old.Handle
+
+	if err := clearSessionTokens(old); err != nil {
+		// Shown on the login view: the tokens are still on disk, so
+		// the next start would log straight back in.
+		app.ErrorMsg = "logout: " + err.Error()
+	}
+	go func() {
+		if err := deleteSession(old); err != nil {
+			logError("revoke session: " + err.Error())
+		}
+	}()
+
+	// Logout runs from the help view, so help is closing too — clear
+	// ShowHelp so the next toggle opens help instead of closing it.
+	app.ShowHelp = false
+	app.CurrentView = loginView
+	w.SetView(loginView)
+}
+
+// refreshSession trades the refresh token for new tokens. It does not
+// save them: it runs on the timeline loop goroutine, and a save from
+// there could land after logout cleared the file and log the user
+// back in on the next start. timelineLoop saves on the UI thread
+// instead, and only while its loop is still the current one.
 func refreshSession(session BSkySession) (BSkySession, error) {
 	refresh, err := refreshBSkySession(session)
 	if err != nil {
@@ -125,8 +181,5 @@ func refreshSession(session BSkySession) (BSkySession, error) {
 	updated := session
 	updated.AccessJWT = refresh.AccessJWT
 	updated.RefreshJWT = refresh.RefreshJWT
-	if err := saveSession(updated); err != nil {
-		return BSkySession{}, fmt.Errorf("save refreshed session: %w", err)
-	}
 	return updated, nil
 }

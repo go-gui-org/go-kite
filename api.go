@@ -85,6 +85,33 @@ func refreshBSkySession(session BSkySession) (refreshSessionResponse, error) {
 	return refresh, nil
 }
 
+// deleteSession revokes the session on the server, so a copied token
+// stops working after logout. atproto authenticates this call with the
+// refresh token: revoking it ends the whole session, and the short-lived
+// access token expires on its own soon after. The response body is
+// empty on success, so only the status is checked.
+func deleteSession(session BSkySession) error {
+	req, err := http.NewRequest(http.MethodPost,
+		pdsHost+"/com.atproto.server.deleteSession", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+session.RefreshJWT)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	// Drain so the keep-alive connection can be reused.
+	_, _ = io.Copy(io.Discard, resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("%s", resp.Status)
+	}
+	return nil
+}
+
 func getTimeline(session BSkySession) (bSkyTimeline, error) {
 	req, err := http.NewRequest(http.MethodGet,
 		fmt.Sprintf("%s/app.bsky.feed.getTimeline?limit=%d", pdsHost, apiTimelineLimit), nil,
