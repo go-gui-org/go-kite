@@ -14,8 +14,9 @@ make test             # go test ./...
 make test-race        # go test -race -count=1 ./...
 make vet lint build   # individual gate targets
 make all              # build Kite.app bundle
-go run .              # run the app
-go run . -no-images   # run without image download/rendering
+make run              # run the app, git tag stamped as the version
+make run ARGS=-no-images  # run without image download/rendering
+go run .              # runs too, but the help view shows version "dev"
 ```
 
 Single test: `GOWORK=off go test -run TestScaledImageDims ./...`.
@@ -44,12 +45,11 @@ defaults, at the version pinned in `tools/lint/go.mod`.
 
 `go-gui` owns the UI thread. Everything touching window or app state from a
 goroutine must go through `w.QueueCommand(func(w *gui.Window){...})`, then call
-`w.InvalidateLayout()` inside it. This is the single most load-bearing rule in the
-codebase — `loginAsync` and `timelineLoop` are both built around it.
+`w.InvalidateLayout()` inside it. This is the single most load-bearing rule in
+the codebase — `loginAsync` and `timelineLoop` are both built around it.
 
 App state is one `*App` reached via `gui.State[App](w)`. Views are functions
-`func(*gui.Window) gui.View` swapped with
-`w.SetView(loginView | timelineView)`.
+`func(*gui.Window) gui.View` swapped with `w.SetView(loginView | timelineView)`.
 
 ### Timeline loop (`timeline.go`)
 

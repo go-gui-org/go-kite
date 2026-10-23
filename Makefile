@@ -1,4 +1,4 @@
-.PHONY: all clean icons dist dist-macos dist-linux dist-windows \
+.PHONY: FORCE all run clean icons dist dist-macos dist-linux dist-windows \
 	test test-race vet lint lint-bin build prepush universal
 
 KITE_BIN     := go-kite
@@ -49,18 +49,45 @@ LINT_BIN = $(LINT_DIR)/golangci-lint
 # CI, which builds the pinned versions, will never see.
 LINT := GOWORK=off $(LINT_BIN)
 
+# The git tag is the version number. Every build target links it into
+# main.version, and the help view's about section prints it. `git describe`
+# gives the tag itself on a tagged commit, and tag-N-gHASH(-dirty) between
+# tags, so a dev build never claims to be a release. Override for a real
+# release: make dist VERSION=1.2.0. 0.0.0 covers a source tree with no .git.
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo 0.0.0)
+VERSION_LDFLAG := -X main.version=$(VERSION)
+
+# Holds the last stamped VERSION. Rewritten only when VERSION changes, so a
+# new tag or commit relinks $(KITE_BIN) — sources alone would not, and the
+# binary would keep printing the old version — while an unchanged tree
+# still skips the rebuild.
+VERSION_STAMP := build/version.txt
+
 all: $(APP_NAME).app
+
+# Runs the app with the git tag stamped in. A bare `go run .` cannot show the
+# version: go run embeds no VCS data (Main.Version is "(devel)") and skips
+# the -X stamp, so the help view's about section would read "dev".
+#   make run ARGS=-no-images
+run:
+	$(GO_APP) run -ldflags="$(VERSION_LDFLAG)" . $(ARGS)
+
+$(VERSION_STAMP): FORCE
+	@mkdir -p build
+	@echo '$(VERSION)' | cmp -s - $@ || echo '$(VERSION)' > $@
+
+FORCE:
 
 # Depends on the embedded dock PNG (icon.go's //go:embed) as well as the
 # sources: `make icons` regenerates it, and without this dependency the
 # binary would keep the old artwork while the re-bundled .app carried the
 # new .icns — Finder and the Dock would disagree about what Kite looks like.
-$(KITE_BIN): *.go go.mod go.sum assets/icon/kite-dock.png
+$(KITE_BIN): *.go go.mod go.sum assets/icon/kite-dock.png $(VERSION_STAMP)
 	# -tags=prod disables go-gui's F12 dev inspector in the shipped app;
 	# -trimpath keeps the binary reproducible; -ldflags "-s -w" strips
 	# the symbol table and DWARF, shrinking the binary ~30% (crash stacks
 	# lose function names as a tradeoff).
-	$(GO_APP) build -tags=prod -trimpath -ldflags="-s -w" -o $@ .
+	$(GO_APP) build -tags=prod -trimpath -ldflags="-s -w $(VERSION_LDFLAG)" -o $@ .
 
 $(BUILDAPP_BIN):
 	mkdir -p build
@@ -111,12 +138,12 @@ universal:
 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
 	  CGO_CFLAGS="-arch arm64" \
 	  CGO_LDFLAGS="-arch arm64 -Wl,-no_warn_duplicate_libraries" \
-	  $(GO_APP) build -tags=prod -trimpath -ldflags="-s -w" \
+	  $(GO_APP) build -tags=prod -trimpath -ldflags="-s -w $(VERSION_LDFLAG)" \
 	  -o build/$(KITE_BIN)-darwin-arm64 .
 	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
 	  CGO_CFLAGS="-arch x86_64" \
 	  CGO_LDFLAGS="-arch x86_64 -Wl,-no_warn_duplicate_libraries" \
-	  $(GO_APP) build -tags=prod -trimpath -ldflags="-s -w" \
+	  $(GO_APP) build -tags=prod -trimpath -ldflags="-s -w $(VERSION_LDFLAG)" \
 	  -o build/$(KITE_BIN)-darwin-amd64 .
 	lipo -create -output $(KITE_BIN) \
 	  build/$(KITE_BIN)-darwin-arm64 build/$(KITE_BIN)-darwin-amd64

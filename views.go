@@ -421,6 +421,8 @@ func helpView(w *gui.Window) gui.View {
 			{key: "Right-click", label: "Scroll back to the top of the timeline"},
 			{key: "Left-click", label: "Open links in your browser"},
 		}),
+		gui.Rectangle(gui.RectangleCfg{Height: gui.PadMedium}),
+		aboutSection(theme),
 	}
 
 	return gui.Column(gui.ContainerCfg{
@@ -474,6 +476,39 @@ func helpSection(theme gui.Theme, title string, items []helpItem) gui.View {
 		Sizing:  gui.FillFit,
 		Spacing: gui.SpacingTight,
 		Content: children,
+	})
+}
+
+// aboutSection closes the help view with the app name, version and
+// source link. It copies helpSection's title and divider so the help
+// view reads as one list. The URL goes through textLink, so it opens
+// in the browser and passes the same isSafeURI guard as post links.
+func aboutSection(theme gui.Theme) gui.View {
+	descStyle := theme.TextStyleBody
+	descStyle.Color = postTextColor
+
+	return gui.Column(gui.ContainerCfg{
+		Padding: gui.PaddingNone,
+		Sizing:  gui.FillFit,
+		Spacing: gui.SpacingTight,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{Text: "About", TextStyle: theme.TextStyleTitleSmall}),
+			gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
+			gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
+			gui.Text(gui.TextCfg{Text: appName, TextStyle: theme.TextStyleTitleSmall}),
+			// Wrapped: an unstamped dev build shows a pseudo-version
+			// (v0.2.2-0.2026...-1114a4a24fc7+dirty) wider than the window.
+			// One RTF block, not a Row of two Texts, so the bold number
+			// wraps with its label instead of overflowing beside it.
+			gui.RTF(gui.RTFCfg{
+				RichText: gui.RichText{Runs: []gui.RichTextRun{
+					gui.RichRun("Version ", descStyle),
+					gui.RichRun(appVersion, descStyle.Bold()),
+				}},
+				Mode: gui.TextModeWrap,
+			}),
+			textLink(repoURL, repoURL, descStyle),
+		},
 	})
 }
 

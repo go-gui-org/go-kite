@@ -23,13 +23,16 @@ images, and keyboard font-size shortcuts.
 
 ```bash
 go mod tidy
-go run .
+make run
 ```
+
+`make run` stamps the git tag into the build, so the help view shows the
+version. A bare `go run .` also works but shows the version as `dev`.
 
 Disable image downloads/rendering:
 
 ```bash
-go run . -no-images
+make run ARGS=-no-images
 ```
 
 ## Test
