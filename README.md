@@ -11,6 +11,8 @@ images, and keyboard font-size shortcuts.
 
 - Login with Bluesky credentials
 - Session persistence in `~/.kite.toml`
+- Log out from the help view (`Cmd+/` on macOS, `Super+/` on Linux, `F1` on
+  Windows)
 - Automatic timeline refresh loop
 - Retry + session refresh fallback on API failures
 - Quoted post rendering

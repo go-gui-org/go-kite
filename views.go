@@ -424,6 +424,16 @@ func helpView(w *gui.Window) gui.View {
 		gui.Rectangle(gui.RectangleCfg{Height: gui.PadMedium}),
 		aboutSection(theme),
 	}
+	// Last, so the Log out button sits at the bottom of the view, out
+	// of the way of the reference sections above. Help also opens from
+	// the login view, where there is nobody to log out, so the account
+	// section shows only with a live session.
+	if app := gui.State[App](w); isValidSession(app.Session) {
+		content = append(content,
+			gui.Rectangle(gui.RectangleCfg{Height: gui.PadMedium}),
+			accountSection(theme, app.Session.Handle),
+		)
+	}
 
 	return gui.Column(gui.ContainerCfg{
 		ID:         helpScrollID,
@@ -476,6 +486,44 @@ func helpSection(theme gui.Theme, title string, items []helpItem) gui.View {
 		Sizing:  gui.FillFit,
 		Spacing: gui.SpacingTight,
 		Content: children,
+	})
+}
+
+// accountSection names the signed-in account and holds the Log out
+// button. Logout lives here, not on a shortcut key, so it takes a
+// deliberate trip into help — logging out means typing the password
+// again.
+func accountSection(theme gui.Theme, handle string) gui.View {
+	descStyle := theme.TextStyleBody
+	descStyle.Color = postTextColor
+
+	return gui.Column(gui.ContainerCfg{
+		Padding: gui.PaddingNone,
+		Sizing:  gui.FillFit,
+		Spacing: gui.SpacingTight,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{Text: "Account", TextStyle: theme.TextStyleTitleSmall}),
+			gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
+			gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
+			// RTF so a long handle wraps with its label, as in aboutSection.
+			gui.RTF(gui.RTFCfg{
+				RichText: gui.RichText{Runs: []gui.RichTextRun{
+					gui.RichRun("Signed in as ", descStyle),
+					gui.RichRun("@"+handle, descStyle.Bold()),
+				}},
+				Mode: gui.TextModeWrap,
+			}),
+			gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
+			gui.Button(gui.ButtonCfg{
+				ID: "help-logout",
+				Content: []gui.View{
+					gui.Text(gui.TextCfg{Text: "Log out"}),
+				},
+				OnClick: func(ctx gui.EventCtx) {
+					logout(ctx.Window)
+				},
+			}),
+		},
 	})
 }
 
