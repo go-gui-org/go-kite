@@ -3,6 +3,8 @@ package main
 import (
 	"math"
 	"testing"
+
+	"github.com/go-gui-org/go-gui/gui"
 )
 
 func TestScaledImageDimsDefaultsDegenerateInputs(t *testing.T) {
@@ -103,6 +105,32 @@ func TestLoginReady(t *testing.T) {
 	for _, tc := range cases {
 		if got := loginReady(&tc.app); got != tc.want {
 			t.Errorf("%s: loginReady = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+// TestSafeLinkRun pins the guard textLink applies before it hands a
+// run to RTF. Post URIs come from the network, and RTF would also act
+// on mailto and in-page anchors, so only http and https keep a Link.
+func TestSafeLinkRun(t *testing.T) {
+	cases := []struct {
+		link string
+		want string
+	}{
+		{"https://bsky.app/profile/a", "https://bsky.app/profile/a"},
+		{"HTTP://example.com", "HTTP://example.com"},
+		{"javascript:alert(1)", ""},
+		{"mailto:a@example.com", ""},
+		{"#top", ""},
+		{"", ""},
+	}
+	for _, c := range cases {
+		got := safeLinkRun(gui.RichTextRun{Text: "t", Link: c.link})
+		if got.Link != c.want {
+			t.Errorf("safeLinkRun(%q).Link = %q, want %q", c.link, got.Link, c.want)
+		}
+		if got.Text != "t" {
+			t.Errorf("safeLinkRun(%q) changed Text to %q", c.link, got.Text)
 		}
 	}
 }
