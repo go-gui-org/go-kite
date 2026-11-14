@@ -13,7 +13,6 @@ const (
 	fieldWidth        = 250
 	timelineScrollID  = "timeline"
 	timelineContentID = "timeline-content"
-	lineThickness     = 0.5
 	maxTimelinePosts  = 25
 
 	// helpScrollID is the help view's scroll container. Right-click
@@ -26,10 +25,35 @@ const (
 	idleRevealAfter = 10 * time.Minute
 )
 
-var (
-	postTextColor    = gui.RGB(0x90, 0x90, 0x90)
-	postDividerColor = gui.RGB(0x70, 0x70, 0x70)
-)
+// secondaryStyle is base recolored with the theme's de-emphasis color.
+// Only the color is taken from TextStyleSecondary: base keeps its own
+// size and face, so the Alt+Up/Down font steps still apply to it.
+func secondaryStyle(theme gui.Theme, base gui.TextStyle) gui.TextStyle {
+	base.Color = theme.TextStyleSecondary.Color
+	return base
+}
+
+// loginReady reports whether the login form may be submitted: no
+// login in flight and both fields hold visible text. The Submit button
+// is disabled on the same rule, and Enter in either field checks it
+// too, because OnEnter fires whether or not the button is disabled.
+func loginReady(app *App) bool {
+	return !app.LoginPending &&
+		strings.TrimSpace(app.UserName) != "" &&
+		strings.TrimSpace(app.Password) != ""
+}
+
+// submitLogin starts a login with the typed credentials. The Submit
+// button and Enter in either field both call it.
+func submitLogin(w *gui.Window) {
+	app := gui.State[App](w)
+	if !loginReady(app) {
+		return
+	}
+	app.LoginPending = true
+	app.ErrorMsg = ""
+	go loginAsync(app.UserName, app.Password, w)
+}
 
 func loginView(w *gui.Window) gui.View {
 	app := gui.State[App](w)
@@ -49,6 +73,10 @@ func loginView(w *gui.Window) gui.View {
 				OnTextChanged: func(s string, ctx gui.EventCtx) {
 					gui.State[App](ctx.Window).UserName = s
 				},
+				OnEnter: func(ctx gui.EventCtx) {
+					submitLogin(ctx.Window)
+					ctx.Consume()
+				},
 			}),
 			gui.Input(gui.InputCfg{
 				ID:          "login-password",
@@ -60,23 +88,17 @@ func loginView(w *gui.Window) gui.View {
 				OnTextChanged: func(s string, ctx gui.EventCtx) {
 					gui.State[App](ctx.Window).Password = s
 				},
+				OnEnter: func(ctx gui.EventCtx) {
+					submitLogin(ctx.Window)
+					ctx.Consume()
+				},
 			}),
 			gui.Button(gui.ButtonCfg{
-				Disabled: app.LoginPending || strings.TrimSpace(app.UserName) == "" || strings.TrimSpace(app.Password) == "",
+				Disabled: !loginReady(app),
 				ID:       "login-submit",
-				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: "Submit"}),
-				},
+				Label:    "Submit",
 				OnClick: func(ctx gui.EventCtx) {
-					app := gui.State[App](ctx.Window)
-					if app.LoginPending {
-						return
-					}
-					app.LoginPending = true
-					app.ErrorMsg = ""
-					username := app.UserName
-					password := app.Password
-					go loginAsync(username, password, ctx.Window)
+					submitLogin(ctx.Window)
 				},
 			}),
 			gui.Text(gui.TextCfg{
@@ -182,14 +204,13 @@ func timelineContent(w *gui.Window) []gui.View {
 		return content
 	}
 
-	baseTextStyle := gui.CurrentTheme().TextStyleBody
-	postTextStyle := baseTextStyle
-	postTextStyle.Color = postTextColor
+	theme := gui.CurrentTheme()
+	baseTextStyle := theme.TextStyleBody
+	postTextStyle := secondaryStyle(theme, baseTextStyle)
 	postLinkStyle := baseTextStyle
 	postLinkStyle.Color = gui.CornflowerBlue
 	postLinkStyle.Size = baseTextStyle.Size - 1
-	postRepostStyle := baseTextStyle
-	postRepostStyle.Color = postTextColor
+	postRepostStyle := postTextStyle
 	postRepostStyle.Size = baseTextStyle.Size - 1
 
 	for _, post := range app.Timeline.Posts {
@@ -219,11 +240,9 @@ func timelineContent(w *gui.Window) []gui.View {
 				Spacing:    gui.SpacingSmall,
 				SizeBorder: gui.NoBorder,
 				Content: []gui.View{
-					gui.Rectangle(gui.RectangleCfg{
-						Width:  lineThickness,
-						Sizing: gui.FixedFill,
-						Color:  postTextColor,
-					}),
+					// The quote bar takes the text's color, not the
+					// divider's, so it reads as part of the quote.
+					gui.Separator(gui.SeparatorCfg{Vertical: true, Color: postTextStyle.Color}),
 					gui.Column(gui.ContainerCfg{
 						Padding: gui.NewPadding(0, gui.PadSmall+gui.PadXSmall, 0, 0),
 						Sizing:  gui.FillFit,
@@ -264,7 +283,7 @@ func timelineContent(w *gui.Window) []gui.View {
 
 		postContent = append(postContent,
 			gui.Rectangle(gui.RectangleCfg{Height: 1}),
-			gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
+			gui.Separator(gui.SeparatorCfg{}),
 		)
 
 		content = append(content, gui.Column(gui.ContainerCfg{
@@ -466,13 +485,12 @@ func helpView(w *gui.Window) gui.View {
 // blocks keep the pairs visually grouped.
 func helpSection(theme gui.Theme, title string, items []helpItem) gui.View {
 	keyStyle := theme.TextStyleTitleSmall
-	descStyle := theme.TextStyleBody
-	descStyle.Color = postTextColor
+	descStyle := secondaryStyle(theme, theme.TextStyleBody)
 
 	children := make([]gui.View, 0, 1+len(items)*3)
 	children = append(children,
 		gui.Text(gui.TextCfg{Text: title, TextStyle: theme.TextStyleTitleSmall}),
-		gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
+		gui.Separator(gui.SeparatorCfg{}),
 	)
 	for _, item := range items {
 		children = append(children,
@@ -494,8 +512,7 @@ func helpSection(theme gui.Theme, title string, items []helpItem) gui.View {
 // deliberate trip into help — logging out means typing the password
 // again.
 func accountSection(theme gui.Theme, handle string) gui.View {
-	descStyle := theme.TextStyleBody
-	descStyle.Color = postTextColor
+	descStyle := secondaryStyle(theme, theme.TextStyleBody)
 
 	return gui.Column(gui.ContainerCfg{
 		Padding: gui.PaddingNone,
@@ -503,7 +520,7 @@ func accountSection(theme gui.Theme, handle string) gui.View {
 		Spacing: gui.SpacingTight,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Account", TextStyle: theme.TextStyleTitleSmall}),
-			gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
+			gui.Separator(gui.SeparatorCfg{}),
 			gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
 			// RTF so a long handle wraps with its label, as in aboutSection.
 			gui.RTF(gui.RTFCfg{
@@ -515,10 +532,8 @@ func accountSection(theme gui.Theme, handle string) gui.View {
 			}),
 			gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
 			gui.Button(gui.ButtonCfg{
-				ID: "help-logout",
-				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: "Log out"}),
-				},
+				ID:    "help-logout",
+				Label: "Log out",
 				OnClick: func(ctx gui.EventCtx) {
 					logout(ctx.Window)
 				},
@@ -532,8 +547,7 @@ func accountSection(theme gui.Theme, handle string) gui.View {
 // view reads as one list. The URL goes through textLink, so it opens
 // in the browser and passes the same isSafeURI guard as post links.
 func aboutSection(theme gui.Theme) gui.View {
-	descStyle := theme.TextStyleBody
-	descStyle.Color = postTextColor
+	descStyle := secondaryStyle(theme, theme.TextStyleBody)
 
 	return gui.Column(gui.ContainerCfg{
 		Padding: gui.PaddingNone,
@@ -541,7 +555,7 @@ func aboutSection(theme gui.Theme) gui.View {
 		Spacing: gui.SpacingTight,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "About", TextStyle: theme.TextStyleTitleSmall}),
-			gui.Rectangle(gui.RectangleCfg{Height: lineThickness, Sizing: gui.FillFixed, Color: postDividerColor}),
+			gui.Separator(gui.SeparatorCfg{}),
 			gui.Rectangle(gui.RectangleCfg{Height: gui.PadSmall}),
 			gui.Text(gui.TextCfg{Text: appName, TextStyle: theme.TextStyleTitleSmall}),
 			// Wrapped: an unstamped dev build shows a pseudo-version

@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Press Enter in the user name or password field to log in. The rule that
+  enables the Submit button also applies to Enter.
+
+### Changed
+
+- Post text, quote text and help descriptions use the theme's secondary text
+  color, not a fixed gray. Dividers use `gui.Separator`, so they take the
+  theme's divider color and thickness. Both now follow light and dark themes.
+
 ## [v0.3.0] - 2026-10-23
 
 ### Added

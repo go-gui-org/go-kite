@@ -84,3 +84,25 @@ func TestScaledImageDimsRejectsNaNAndInf(t *testing.T) {
 		t.Fatalf("-Inf dims: got %vx%v, want %vx%v", w, h, imageWidth, maxImageHeight)
 	}
 }
+
+// TestLoginReady pins the one rule the Submit button and Enter in
+// either login field share. Enter fires OnEnter even while the button
+// is disabled, so submitLogin must re-check it.
+func TestLoginReady(t *testing.T) {
+	cases := []struct {
+		name string
+		app  App
+		want bool
+	}{
+		{"both filled", App{UserName: "a", Password: "b"}, true},
+		{"empty user", App{Password: "b"}, false},
+		{"empty password", App{UserName: "a"}, false},
+		{"whitespace only", App{UserName: " \t", Password: "b"}, false},
+		{"login in flight", App{UserName: "a", Password: "b", LoginPending: true}, false},
+	}
+	for _, tc := range cases {
+		if got := loginReady(&tc.app); got != tc.want {
+			t.Errorf("%s: loginReady = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
