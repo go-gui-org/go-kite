@@ -207,8 +207,8 @@ func timelineContent(w *gui.Window) []gui.View {
 	theme := gui.CurrentTheme()
 	baseTextStyle := theme.TextStyleBody
 	postTextStyle := secondaryStyle(theme, baseTextStyle)
+	// RichLink sets the color and underline from the theme's link role.
 	postLinkStyle := baseTextStyle
-	postLinkStyle.Color = gui.CornflowerBlue
 	postLinkStyle.Size = baseTextStyle.Size - 1
 	postRepostStyle := postTextStyle
 	postRepostStyle.Size = baseTextStyle.Size - 1
@@ -228,7 +228,7 @@ func timelineContent(w *gui.Window) []gui.View {
 		}
 
 		postContent = append(postContent,
-			textLink(post.FormattedTimeAuthor, post.BSkyLinkURI, baseTextStyle),
+			textLink(gui.RichTextRun{Text: post.FormattedTimeAuthor, Link: post.BSkyLinkURI, Style: baseTextStyle}),
 			gui.Rectangle(gui.RectangleCfg{Height: 2, Width: 1}), // spacer
 			gui.Text(gui.TextCfg{Text: post.FormattedText, Mode: gui.TextModeWrap, TextStyle: postTextStyle}),
 		)
@@ -248,7 +248,7 @@ func timelineContent(w *gui.Window) []gui.View {
 						Sizing:  gui.FillFit,
 						Spacing: gui.NoSpacing,
 						Content: []gui.View{
-							textLink(post.FormattedQuoteTimeAuth, post.QuotePostLinkURI, baseTextStyle),
+							textLink(gui.RichTextRun{Text: post.FormattedQuoteTimeAuth, Link: post.QuotePostLinkURI, Style: baseTextStyle}),
 							gui.Rectangle(gui.RectangleCfg{Height: gui.PadXSmall - 1}),
 							gui.Text(gui.TextCfg{Text: post.FormattedQuoteText, Mode: gui.TextModeWrap, TextStyle: postTextStyle}),
 						},
@@ -260,7 +260,7 @@ func timelineContent(w *gui.Window) []gui.View {
 		if post.LinkURI != "" {
 			postContent = append(postContent,
 				gui.Rectangle(gui.RectangleCfg{Height: 2, Width: 1}), // spacer
-				textLink(post.LinkTitle, post.LinkURI, postLinkStyle))
+				textLink(gui.RichLink(post.LinkTitle, post.LinkURI, postLinkStyle)))
 		}
 
 		if post.ImagePath != "" && app.ShowImages {
@@ -569,47 +569,29 @@ func aboutSection(theme gui.Theme) gui.View {
 				}},
 				Mode: gui.TextModeWrap,
 			}),
-			textLink(repoURL, repoURL, descStyle),
+			textLink(gui.RichLink(repoURL, repoURL, descStyle)),
 		},
 	})
 }
 
-func textLink(linkTitle, linkURI string, textStyle gui.TextStyle) gui.View {
-	return gui.Column(gui.ContainerCfg{
-		Padding:    gui.PaddingNone,
-		SizeBorder: gui.NoBorder,
-		Sizing:     gui.FillFit,
-		OnClick: func(ctx gui.EventCtx) {
-			ctx.Consume()
-			if ctx.Event.MouseButton != gui.MouseLeft {
-				return
-			}
-			if !isSafeURI(linkURI) {
-				return
-			}
-			np := ctx.Window.NativePlatformBackend()
-			if np == nil {
-				return
-			}
-			if err := np.OpenURI(linkURI); err != nil {
-				logError(err.Error())
-			}
-		},
-		OnHover: func(ctx gui.EventCtx) {
-			ctx.Consume()
-			if len(ctx.Layout.Children) > 0 && ctx.Layout.Children[0].Shape != nil && ctx.Layout.Children[0].Shape.TC != nil {
-				ts := ctx.Layout.Children[0].Shape.TC.TextStyle
-				ts.Color = gui.CornflowerBlue
-				ctx.Layout.Children[0].Shape.TC.TextStyle = ts
-			}
-			ctx.Window.SetMouseCursorPointingHand()
-		},
-		Content: []gui.View{
-			gui.Text(gui.TextCfg{
-				Text:      linkTitle,
-				Mode:      gui.TextModeWrap,
-				TextStyle: textStyle,
-			}),
-		},
+// textLink draws run as one wrapped RTF block. go-gui's RTF opens the
+// link on left-click, shows the pointer cursor over it and gives it a
+// right-click menu (Open Link, Copy Link). Before that, safeLinkRun
+// drops a link that isSafeURI rejects, so the text still shows but
+// does nothing.
+func textLink(run gui.RichTextRun) gui.View {
+	return gui.RTF(gui.RTFCfg{
+		RichText: gui.RichText{Runs: []gui.RichTextRun{safeLinkRun(run)}},
+		Mode:     gui.TextModeWrap,
 	})
+}
+
+// safeLinkRun clears run.Link unless it is http or https. Post URIs
+// come from the network, and RTF also acts on mailto and in-page
+// anchors, so the stricter isSafeURI guard stays in front of it.
+func safeLinkRun(run gui.RichTextRun) gui.RichTextRun {
+	if !isSafeURI(run.Link) {
+		run.Link = ""
+	}
+	return run
 }

@@ -12,6 +12,10 @@
 - Post text, quote text and help descriptions use the theme's secondary text
   color, not a fixed gray. Dividers use `gui.Separator`, so they take the
   theme's divider color and thickness. Both now follow light and dark themes.
+- Links use go-gui's `RTF` link runs, not a hand-built hover handler. The post
+  link and the GitHub URL in the help view use the theme's link color and an
+  underline. Right-click on a link opens a menu with Open Link and Copy Link.
+  Links still open only `http` and `https` URLs.
 
 ## [v0.3.0] - 2026-10-23
 
