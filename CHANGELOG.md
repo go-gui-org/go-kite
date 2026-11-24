@@ -9,6 +9,7 @@
 
 ### Changed
 
+- **Bump go-gui v0.99.1 to v0.100.0.** Dependency update.
 - Post text, quote text and help descriptions use the theme's secondary text
   color, not a fixed gray. Dividers use `gui.Separator`, so they take the
   theme's divider color and thickness. Both now follow light and dark themes.
